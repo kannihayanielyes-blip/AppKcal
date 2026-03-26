@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#6B7C45">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Inscription — AppKcal</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body data-page="register">
+
+<div class="auth-page">
+  <!-- Header -->
+  <div class="auth-header">
+    <div class="auth-logo">🥗</div>
+    <h1 class="auth-title">Créer un compte</h1>
+    <p class="auth-subtitle">Rejoins AppKcal et prends le contrôle</p>
+  </div>
+
+  <!-- Form -->
+  <div class="auth-body">
+    <form id="register-form" novalidate>
+      <div class="form-group mb-16">
+        <label class="form-label" for="email">Email</label>
+        <div class="input-wrapper">
+          <span class="input-icon">✉️</span>
+          <input
+            class="form-input"
+            type="email"
+            id="email"
+            placeholder="ton@email.com"
+            autocomplete="email"
+            inputmode="email"
+            required
+          >
+        </div>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label" for="password">Mot de passe</label>
+        <div class="input-wrapper">
+          <span class="input-icon">🔒</span>
+          <input
+            class="form-input"
+            type="password"
+            id="password"
+            placeholder="8 caractères minimum"
+            autocomplete="new-password"
+            required
+          >
+          <button type="button" class="input-toggle" id="toggle-password">👁️</button>
+        </div>
+      </div>
+
+      <div class="form-group mb-24">
+        <label class="form-label" for="invite_code">Code d'invitation <span style="color:var(--danger)">*</span></label>
+        <div class="input-wrapper">
+          <span class="input-icon">🎟️</span>
+          <input
+            class="form-input"
+            type="text"
+            id="invite_code"
+            placeholder="Entre ton code"
+            autocomplete="off"
+            required
+            style="text-transform:uppercase;letter-spacing:.1em"
+          >
+        </div>
+        <span class="form-error hidden" id="invite-error">Code d'invitation invalide</span>
+        <span class="text-xs text-muted" id="invite-hint">AppKcal est en accès beta privé</span>
+      </div>
+
+      <label class="rgpd-label mb-20">
+        <input type="checkbox" id="rgpd-check">
+        <span class="rgpd-text">
+          J'accepte les <strong>conditions générales d'utilisation</strong> et la <strong>politique de confidentialité (RGPD)</strong>.
+          Mes données sont utilisées uniquement pour faire fonctionner AppKcal et ne sont jamais vendues.
+        </span>
+      </label>
+
+      <button type="submit" id="submit-btn" class="btn btn--primary btn--full" disabled>
+        Créer mon compte
+      </button>
+    </form>
+  </div>
+
+  <!-- Footer -->
+  <div class="auth-footer">
+    Déjà un compte ?
+    <a href="/pages/login.html">Se connecter</a>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,1035 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#6B7C45">
+  <title>Photo IA — AppKcal</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .photo-page {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+      padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
+    }
+    .photo-header { padding: 20px 20px 0; }
+    .photo-header h1 { font-size: 1.4rem; margin-bottom: 4px; }
+
+    /* ── Drop zone ── */
+    .photo-area {
+      margin: 16px 20px 0;
+      background: var(--white);
+      border-radius: var(--radius-xl);
+      min-height: 200px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      border: 2px dashed var(--cream-d);
+      cursor: pointer;
+      transition: border-color .2s;
+      overflow: hidden;
+      position: relative;
+    }
+    .photo-area.has-image { border-style: solid; border-color: var(--olive); }
+    .photo-area img { width: 100%; height: 100%; object-fit: cover; position: absolute; }
+    .photo-area__icon { font-size: 3rem; position: relative; z-index: 1; }
+    .photo-area__label { font-size: .9rem; color: var(--text-muted); position: relative; z-index: 1; }
+
+    /* ── Result card ── */
+    .result-card {
+      margin: 14px 20px 0;
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      display: none;
+    }
+    .result-card.visible { display: block; }
+    .result-name { font-size: 1.2rem; font-weight: 700; margin-bottom: 12px; }
+    .result-macros { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
+    .result-macro { text-align: center; padding: 10px 6px; background: var(--cream); border-radius: var(--radius-sm); }
+    .result-macro__val { font-size: 1.1rem; font-weight: 700; }
+    .result-macro__lbl { font-size: .68rem; color: var(--text-muted); margin-top: 2px; }
+    .result-details { margin-top: 12px; font-size: .85rem; color: var(--text-muted); line-height: 1.5; }
+
+    /* ── Section recettes ── */
+    .recipes-section { padding: 24px 20px 0; }
+    .recipes-section__title { font-size: 1.1rem; font-weight: 700; margin-bottom: 14px; }
+
+    .category-pills {
+      display: flex;
+      gap: 8px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+      margin-bottom: 16px;
+      scrollbar-width: none;
+    }
+    .category-pills::-webkit-scrollbar { display: none; }
+    .category-pill {
+      padding: 7px 16px;
+      border-radius: 99px;
+      border: 2px solid var(--cream-d);
+      background: var(--white);
+      font-size: .82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all .2s;
+      flex-shrink: 0;
+    }
+    .category-pill.active {
+      border-color: var(--olive);
+      background: var(--olive);
+      color: var(--white);
+    }
+
+    .recipes-grid {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .recipe-card {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      display: flex;
+      cursor: pointer;
+      transition: transform .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .recipe-card:active { transform: scale(.98); }
+
+    .recipe-card__img {
+      width: 90px;
+      min-height: 90px;
+      background: var(--cream-d);
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+    }
+    .recipe-card__img img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .recipe-card__body {
+      padding: 12px 14px;
+      flex: 1;
+      min-width: 0;
+    }
+    .recipe-card__name {
+      font-weight: 700;
+      font-size: .95rem;
+      margin-bottom: 4px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .recipe-card__kcal {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--olive);
+      margin-bottom: 6px;
+    }
+    .recipe-card__macros {
+      font-size: .75rem;
+      color: var(--text-muted);
+    }
+
+    .recipes-empty {
+      text-align: center;
+      padding: 40px 20px;
+      color: var(--text-muted);
+    }
+    .recipes-empty__icon { font-size: 2.5rem; margin-bottom: 10px; }
+    .recipes-empty__text { font-size: .9rem; }
+
+    /* ── Recipe modal ── */
+    .recipe-modal-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      z-index: 300;
+      display: none;
+      align-items: flex-end;
+    }
+    .recipe-modal-overlay.open { display: flex; }
+
+    .recipe-modal {
+      width: 100%;
+      background: var(--white);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      max-height: 90dvh;
+      overflow-y: auto;
+      animation: sheet-up .3s ease;
+    }
+
+    .recipe-modal__hero {
+      width: 100%;
+      height: 220px;
+      background: var(--cream-d);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 5rem;
+      position: relative;
+      flex-shrink: 0;
+    }
+    .recipe-modal__hero img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    .recipe-modal__close {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: rgba(0,0,0,.35);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.1rem;
+      cursor: pointer;
+      border: none;
+      z-index: 1;
+    }
+
+    .recipe-modal__body {
+      padding: 20px 20px calc(24px + env(safe-area-inset-bottom));
+    }
+
+    .recipe-modal__name { font-size: 1.3rem; font-weight: 800; margin-bottom: 16px; }
+
+    .recipe-modal__macros {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 8px;
+      margin-bottom: 20px;
+    }
+    .recipe-modal__macro {
+      text-align: center;
+      padding: 10px 6px;
+      background: var(--cream);
+      border-radius: var(--radius-sm);
+    }
+    .recipe-modal__macro-val { font-size: 1.1rem; font-weight: 800; }
+    .recipe-modal__macro-lbl { font-size: .68rem; color: var(--text-muted); margin-top: 2px; }
+    .recipe-modal__macro-val--kcal { color: var(--olive); }
+
+    .recipe-modal__section-title {
+      font-size: .85rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+
+    .recipe-ingredients {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 20px;
+    }
+    .recipe-ingredient {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 12px;
+      background: var(--cream);
+      border-radius: var(--radius-sm);
+      font-size: .88rem;
+    }
+    .recipe-ingredient__name { font-weight: 500; }
+    .recipe-ingredient__qty { color: var(--text-muted); font-size: .82rem; }
+
+    .recipe-instructions {
+      font-size: .88rem;
+      line-height: 1.7;
+      color: var(--text);
+      margin-bottom: 24px;
+      white-space: pre-line;
+    }
+
+    @keyframes sheet-up {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+
+    /* ── Context panel (step 1) ── */
+    .context-panel {
+      margin: 12px 20px 0;
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      display: none;
+    }
+    .context-panel.visible { display: block; }
+    .context-panel textarea {
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--cream-d);
+      border-radius: var(--radius-md);
+      font-size: .92rem;
+      font-family: inherit;
+      resize: none;
+      outline: none;
+      transition: border-color .2s;
+      background: var(--white);
+      color: var(--text);
+    }
+    .context-panel textarea:focus { border-color: var(--olive); }
+    .context-label {
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 6px;
+    }
+    .context-optional {
+      font-size: .75rem;
+      font-weight: 400;
+      color: var(--text-muted);
+    }
+
+    /* ── Results panel (step 2) ── */
+    .results-panel {
+      margin: 12px 20px 0;
+      display: none;
+    }
+    .results-panel.visible { display: block; }
+
+    .meal-type-row {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .meal-type-row::-webkit-scrollbar { display: none; }
+    .meal-type-btn {
+      padding: 8px 14px;
+      border-radius: 99px;
+      border: 2px solid var(--cream-d);
+      background: var(--white);
+      font-size: .82rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all .2s;
+      flex-shrink: 0;
+    }
+    .meal-type-btn.active {
+      border-color: var(--olive);
+      background: var(--olive);
+      color: var(--white);
+    }
+
+    .aliment-row {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow-sm);
+    }
+    .aliment-row__top {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    .aliment-name-input {
+      flex: 1;
+      padding: 8px 12px;
+      border: 2px solid var(--cream-d);
+      border-radius: var(--radius-sm);
+      font-size: .88rem;
+      font-weight: 600;
+      outline: none;
+      background: var(--white);
+      transition: border-color .2s;
+    }
+    .aliment-name-input:focus { border-color: var(--olive); }
+    .aliment-delete {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--cream-d);
+      color: var(--text-muted);
+      font-size: .9rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: all .15s;
+    }
+    .aliment-delete:hover { background: #ffe0e0; color: var(--danger); }
+
+    .aliment-row__bottom {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    .aliment-qty-wrap {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      background: var(--cream);
+      border-radius: var(--radius-sm);
+      padding: 6px 10px;
+    }
+    .aliment-qty-input {
+      width: 56px;
+      border: none;
+      background: transparent;
+      font-size: .88rem;
+      font-weight: 700;
+      outline: none;
+      text-align: right;
+    }
+    .aliment-qty-unit { font-size: .78rem; color: var(--text-muted); }
+    .aliment-kcal-display {
+      font-size: .92rem;
+      font-weight: 700;
+      color: var(--olive);
+    }
+    .aliment-macros-display {
+      font-size: .75rem;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+
+    /* Manual add form */
+    .add-aliment-form {
+      background: var(--white);
+      border-radius: var(--radius-md);
+      padding: 14px;
+      margin-bottom: 8px;
+      box-shadow: var(--shadow-sm);
+      display: none;
+    }
+    .add-aliment-form.visible { display: block; }
+    .add-aliment-row {
+      display: grid;
+      grid-template-columns: 1fr 72px 72px;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+
+    /* Total bar */
+    .result-totals {
+      background: var(--olive);
+      border-radius: var(--radius-md);
+      padding: 14px 16px;
+      margin-bottom: 14px;
+      color: var(--white);
+    }
+    .result-totals__kcal {
+      font-size: 1.6rem;
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .result-totals__macros {
+      font-size: .82rem;
+      opacity: .88;
+    }
+  </style>
+</head>
+<body>
+
+<div class="photo-page">
+  <div class="photo-header" style="display:flex;align-items:flex-start;gap:12px">
+    <button onclick="history.length>1?history.back():location.href='/pages/dashboard.html'" style="margin-top:4px;font-size:1.3rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">←</button>
+    <div>
+      <h1>📸 Photo IA</h1>
+      <p class="text-muted text-sm">Prends une photo de ton repas et laisse l'IA estimer les calories</p>
+    </div>
+  </div>
+
+  <!-- Drop zone -->
+  <div class="photo-area" id="photo-area" onclick="triggerPhoto()">
+    <div class="photo-area__icon">📷</div>
+    <div class="photo-area__label">Appuie pour prendre une photo</div>
+  </div>
+  <input type="file" id="photo-file" accept="image/*" capture="environment" style="display:none">
+
+  <!-- Boutons initiaux (avant photo) -->
+  <div id="initial-btns" style="padding:12px 20px 0;display:flex;gap:10px">
+    <button class="btn btn--outline" style="flex:1" onclick="document.getElementById('photo-file').click()">📁 Galerie</button>
+    <button class="btn btn--ghost" style="flex:1" onclick="document.getElementById('photo-file').click()">📸 Caméra</button>
+  </div>
+
+  <!-- ÉTAPE 1 : contexte (apparaît après sélection photo) -->
+  <div class="context-panel" id="context-panel">
+    <div class="context-label" style="margin-bottom:8px">
+      Donne plus de contexte <span class="context-optional">(optionnel, améliore la précision)</span>
+    </div>
+    <div class="form-group mb-16">
+      <div class="context-label">Décris ce que tu vois</div>
+      <textarea id="food-description" rows="2" placeholder="ex : poulet grillé avec du riz basmati, environ 150g de poulet"></textarea>
+    </div>
+    <div class="form-group mb-16">
+      <div class="context-label">Poids total de l'assiette (g)</div>
+      <input class="form-input" type="number" id="plate-weight" placeholder="ex : 350" inputmode="numeric" min="0">
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn--ghost" style="flex:1" onclick="resetPhoto()">↩ Refaire</button>
+      <button class="btn btn--primary" style="flex:2" id="analyze-btn">🔍 Analyser</button>
+    </div>
+  </div>
+
+  <!-- ÉTAPE 2 : résultats éditables -->
+  <div class="results-panel" id="results-panel">
+    <!-- Type de repas -->
+    <div class="meal-type-row" id="meal-type-row">
+      <button class="meal-type-btn active" data-meal="breakfast">🌅 Matin</button>
+      <button class="meal-type-btn" data-meal="lunch">☀️ Midi</button>
+      <button class="meal-type-btn" data-meal="dinner">🌙 Soir</button>
+      <button class="meal-type-btn" data-meal="snack">🍎 Snack</button>
+    </div>
+
+    <!-- Liste aliments éditables -->
+    <div id="aliments-list"></div>
+
+    <!-- Ajouter manuellement -->
+    <div class="add-aliment-form" id="add-aliment-form">
+      <div class="context-label" style="margin-bottom:10px">Nouvel aliment</div>
+      <div class="add-aliment-row">
+        <input class="form-input" type="text" id="manual-name" placeholder="Nom de l'aliment" style="font-size:.88rem;padding:10px 12px">
+        <input class="form-input" type="number" id="manual-g" placeholder="g" inputmode="numeric" style="font-size:.88rem;padding:10px 8px;text-align:center">
+        <input class="form-input" type="number" id="manual-kcal" placeholder="kcal" inputmode="numeric" style="font-size:.88rem;padding:10px 8px;text-align:center">
+      </div>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn--ghost" style="flex:1;padding:10px" onclick="cancelAddAliment()">Annuler</button>
+        <button class="btn btn--outline" style="flex:2;padding:10px" onclick="confirmAddAliment()">Ajouter</button>
+      </div>
+    </div>
+
+    <button class="btn btn--ghost btn--full mb-16" id="show-add-aliment-btn" onclick="showAddAlimentForm()" style="font-size:.88rem">
+      + Ajouter un aliment manuellement
+    </button>
+
+    <!-- Totaux live -->
+    <div class="result-totals" id="result-totals">
+      <div class="result-totals__kcal"><span id="total-kcal">0</span> kcal</div>
+      <div class="result-totals__macros">P <span id="total-prot">0</span>g · G <span id="total-carbs">0</span>g · L <span id="total-fat">0</span>g</div>
+    </div>
+
+    <!-- Actions -->
+    <button class="btn btn--primary btn--full mb-16" id="confirm-btn">✓ Confirmer et ajouter au journal</button>
+    <button class="btn btn--ghost btn--full" onclick="redoAnalysis()" style="font-size:.88rem">↩ Refaire l'analyse</button>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- ── Idées de repas ── -->
+  <section class="recipes-section">
+    <div class="recipes-section__title">🍽️ Idées de repas</div>
+
+    <!-- Filtres catégories -->
+    <div class="category-pills" id="category-pills">
+      <div class="category-pill active" data-cat="all">Tous</div>
+      <div class="category-pill" data-cat="breakfast">Petit-déj</div>
+      <div class="category-pill" data-cat="meal">Repas</div>
+      <div class="category-pill" data-cat="snack">Snack</div>
+      <div class="category-pill" data-cat="dessert">Dessert</div>
+      <div class="category-pill" data-cat="shaker">Shaker</div>
+    </div>
+
+    <!-- Liste recettes -->
+    <div class="recipes-grid" id="recipes-grid">
+      <div class="recipes-empty">
+        <div class="recipes-empty__icon">🔄</div>
+        <div class="recipes-empty__text">Chargement...</div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- ── Recipe modal ── -->
+<div class="recipe-modal-overlay" id="recipe-modal-overlay" onclick="handleRecipeOverlayClick(event)">
+  <div class="recipe-modal" id="recipe-modal">
+    <div class="recipe-modal__hero" id="modal-hero">
+      <button class="recipe-modal__close" onclick="closeRecipeModal()">✕</button>
+      <span id="modal-hero-emoji">🍽️</span>
+    </div>
+    <div class="recipe-modal__body">
+      <div class="recipe-modal__name" id="modal-name"></div>
+
+      <div class="recipe-modal__macros">
+        <div class="recipe-modal__macro">
+          <div class="recipe-modal__macro-val recipe-modal__macro-val--kcal" id="modal-kcal">—</div>
+          <div class="recipe-modal__macro-lbl">kcal</div>
+        </div>
+        <div class="recipe-modal__macro">
+          <div class="recipe-modal__macro-val" id="modal-protein">—</div>
+          <div class="recipe-modal__macro-lbl">protéines</div>
+        </div>
+        <div class="recipe-modal__macro">
+          <div class="recipe-modal__macro-val" id="modal-carbs">—</div>
+          <div class="recipe-modal__macro-lbl">glucides</div>
+        </div>
+        <div class="recipe-modal__macro">
+          <div class="recipe-modal__macro-val" id="modal-fat">—</div>
+          <div class="recipe-modal__macro-lbl">lipides</div>
+        </div>
+      </div>
+
+      <div id="modal-ingredients-section">
+        <div class="recipe-modal__section-title">Ingrédients</div>
+        <div class="recipe-ingredients" id="modal-ingredients"></div>
+      </div>
+
+      <div id="modal-instructions-section">
+        <div class="recipe-modal__section-title">Préparation</div>
+        <div class="recipe-instructions" id="modal-instructions"></div>
+      </div>
+
+      <button class="btn btn--primary btn--full" id="modal-add-btn">
+        + Ajouter au journal aujourd'hui
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="/pages/dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Accueil
+  </a>
+  <a class="nav-item" href="/pages/feed.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Feed
+  </a>
+  <a class="nav-item nav-item--fab active" href="/pages/photo.html">
+    <div class="nav-fab-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff"/><circle cx="12" cy="13" r="4" stroke="#fff"/></svg>
+    </div>
+    <span>Photo IA</span>
+  </a>
+  <a class="nav-item" href="/pages/sport.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M7 3l-4 9 4 9M17 3l4 9-4 9"/></svg>
+    Sport
+  </a>
+  <a class="nav-item" href="/pages/calendar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Calendrier
+  </a>
+</nav>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  if (!requireAuth()) return;
+
+  // ── Photo IA — state ─────────────────────────────────────────
+  const fileInput   = document.getElementById('photo-file');
+  const analyzeBtn  = document.getElementById('analyze-btn');
+  const photoArea   = document.getElementById('photo-area');
+  const initialBtns = document.getElementById('initial-btns');
+
+  // alimentsData : [{nom, quantite_g, kcal_per_g, prot_per_g, carbs_per_g, fat_per_g}]
+  let alimentsData = [];
+  let selectedMeal = 'snack';
+
+  // ── Trigger file input (caméra ou galerie) ──────────────────
+  window.triggerPhoto = () => fileInput.click();
+
+  // ── Photo sélectionnée ──────────────────────────────────────
+  fileInput.addEventListener('change', () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    const url = URL.createObjectURL(file);
+    photoArea.innerHTML = `<img src="${url}" alt="preview">`;
+    photoArea.style.cursor = 'default';
+    photoArea.onclick = null;
+    photoArea.classList.add('has-image');
+    // Show context panel, hide others
+    initialBtns.style.display = 'none';
+    document.getElementById('context-panel').classList.add('visible');
+    document.getElementById('results-panel').classList.remove('visible');
+  });
+
+  // ── Reset ───────────────────────────────────────────────────
+  window.resetPhoto = () => {
+    fileInput.value = '';
+    photoArea.innerHTML = '<div class="photo-area__icon">📷</div><div class="photo-area__label">Appuie pour prendre une photo</div>';
+    photoArea.classList.remove('has-image');
+    photoArea.style.cursor = 'pointer';
+    photoArea.onclick = () => triggerPhoto();
+    initialBtns.style.display = 'flex';
+    document.getElementById('context-panel').classList.remove('visible');
+    document.getElementById('results-panel').classList.remove('visible');
+    alimentsData = [];
+  };
+
+  // ── Analyser ────────────────────────────────────────────────
+  analyzeBtn.addEventListener('click', async () => {
+    const file = fileInput.files[0];
+    if (!file) return;
+    setLoading(analyzeBtn, true);
+    const formData = new FormData();
+    formData.append('photo', file);
+    const desc   = document.getElementById('food-description').value.trim();
+    const weight = document.getElementById('plate-weight').value.trim();
+    if (desc)   formData.append('description', desc);
+    if (weight) formData.append('weight_g', weight);
+
+    try {
+      const result = await API.photo.analyze(formData);
+
+      // ── DEBUG : affiche la réponse brute dans la console ──────
+      console.log('[Photo IA] Réponse brute API :', result);
+      if (result.aliments) {
+        console.log('[Photo IA] Premier aliment :', result.aliments[0]);
+        console.log('[Photo IA] Clés du premier aliment :', Object.keys(result.aliments[0] || {}));
+      }
+
+      // Le backend normalise déjà vers proteines_g / glucides_g / lipides_g
+      alimentsData = (result.aliments || []).map(a => {
+        const q    = a.quantite_g  || 1;
+        const kcal = a.calories    || 0;
+        const prot = a.proteines_g || 0;
+        const carbs = a.glucides_g || 0;
+        const fat   = a.lipides_g  || 0;
+
+        console.log(`[Photo IA] "${a.nom}" q=${q}g kcal=${kcal} prot=${prot} carbs=${carbs} fat=${fat}`);
+        return {
+          nom:        a.nom,
+          quantite_g: q,
+          kcal_per_g:  kcal  / q,
+          prot_per_g:  prot  / q,
+          carbs_per_g: carbs / q,
+          fat_per_g:   fat   / q,
+        };
+      });
+      renderAliments();
+      document.getElementById('context-panel').classList.remove('visible');
+      document.getElementById('results-panel').classList.add('visible');
+    } catch (err) {
+      toast(err.message, 'error');
+    } finally {
+      setLoading(analyzeBtn, false);
+    }
+  });
+
+  // ── Meal type ───────────────────────────────────────────────
+  document.getElementById('meal-type-row').addEventListener('click', e => {
+    const btn = e.target.closest('.meal-type-btn');
+    if (!btn) return;
+    document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedMeal = btn.dataset.meal;
+  });
+
+  // ── Render aliments list ────────────────────────────────────
+  function renderAliments() {
+    const list = document.getElementById('aliments-list');
+    list.innerHTML = alimentsData.map((item, i) => {
+      const c = computeItem(item);
+      return `
+        <div class="aliment-row" data-idx="${i}">
+          <div class="aliment-row__top">
+            <input class="aliment-name-input" value="${escHtml(item.nom)}" data-idx="${i}" placeholder="Aliment">
+            <button class="aliment-delete" onclick="deleteAliment(${i})">✕</button>
+          </div>
+          <div class="aliment-row__bottom">
+            <div class="aliment-qty-wrap">
+              <input class="aliment-qty-input" type="number" value="${item.quantite_g}" data-idx="${i}" min="0" step="1">
+              <span class="aliment-qty-unit">g</span>
+            </div>
+            <div class="aliment-kcal-display" id="kcal-${i}">${c.kcal} kcal</div>
+            <div class="aliment-macros-display" id="macros-${i}">P${c.prot} · G${c.carbs} · L${c.fat}</div>
+          </div>
+        </div>`;
+    }).join('');
+
+    // Attach listeners
+    list.querySelectorAll('.aliment-name-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        alimentsData[+e.target.dataset.idx].nom = e.target.value;
+      });
+    });
+    list.querySelectorAll('.aliment-qty-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        const idx = +e.target.dataset.idx;
+        alimentsData[idx].quantite_g = +e.target.value || 0;
+        const c = computeItem(alimentsData[idx]);
+        document.getElementById('kcal-' + idx).textContent   = c.kcal + ' kcal';
+        document.getElementById('macros-' + idx).textContent = `P${c.prot} · G${c.carbs} · L${c.fat}`;
+        updateTotals();
+      });
+    });
+    updateTotals();
+  }
+
+  function computeItem(item) {
+    const q = item.quantite_g || 0;
+    return {
+      kcal:  Math.round(item.kcal_per_g  * q),
+      prot:  Math.round(item.prot_per_g  * q * 10) / 10,
+      carbs: Math.round(item.carbs_per_g * q * 10) / 10,
+      fat:   Math.round(item.fat_per_g   * q * 10) / 10,
+    };
+  }
+
+  function updateTotals() {
+    let kcal = 0, prot = 0, carbs = 0, fat = 0;
+    alimentsData.forEach(item => {
+      const c = computeItem(item);
+      kcal += c.kcal; prot += c.prot; carbs += c.carbs; fat += c.fat;
+    });
+    document.getElementById('total-kcal').textContent  = Math.round(kcal);
+    document.getElementById('total-prot').textContent  = Math.round(prot * 10) / 10;
+    document.getElementById('total-carbs').textContent = Math.round(carbs * 10) / 10;
+    document.getElementById('total-fat').textContent   = Math.round(fat * 10) / 10;
+  }
+
+  // ── Delete aliment ──────────────────────────────────────────
+  window.deleteAliment = (idx) => {
+    alimentsData.splice(idx, 1);
+    renderAliments();
+  };
+
+  // ── Redo analysis ───────────────────────────────────────────
+  window.redoAnalysis = () => {
+    document.getElementById('food-description').value = '';
+    document.getElementById('plate-weight').value = '';
+    document.getElementById('results-panel').classList.remove('visible');
+    document.getElementById('context-panel').classList.add('visible');
+  };
+
+  // ── Manual add aliment ──────────────────────────────────────
+  window.showAddAlimentForm = () => {
+    document.getElementById('add-aliment-form').classList.add('visible');
+    document.getElementById('show-add-aliment-btn').style.display = 'none';
+    document.getElementById('manual-name').focus();
+  };
+
+  window.cancelAddAliment = () => {
+    document.getElementById('add-aliment-form').classList.remove('visible');
+    document.getElementById('show-add-aliment-btn').style.display = '';
+    document.getElementById('manual-name').value = '';
+    document.getElementById('manual-g').value = '';
+    document.getElementById('manual-kcal').value = '';
+  };
+
+  window.confirmAddAliment = () => {
+    const nom  = document.getElementById('manual-name').value.trim();
+    const g    = +document.getElementById('manual-g').value   || 100;
+    const kcal = +document.getElementById('manual-kcal').value || 0;
+    if (!nom) { toast('Donne un nom à l\'aliment', 'error'); return; }
+    alimentsData.push({
+      nom,
+      quantite_g:  g,
+      kcal_per_g:  kcal / g,
+      prot_per_g:  0,
+      carbs_per_g: 0,
+      fat_per_g:   0,
+    });
+    cancelAddAliment();
+    renderAliments();
+  };
+
+  // ── Confirmer et ajouter au journal ─────────────────────────
+  document.getElementById('confirm-btn').addEventListener('click', async () => {
+    if (!alimentsData.length) { toast('Aucun aliment à enregistrer', 'error'); return; }
+    const btn = document.getElementById('confirm-btn');
+    setLoading(btn, true);
+    try {
+      // Add each aliment as a separate log entry
+      for (const item of alimentsData) {
+        const c = computeItem(item);
+        await API.nutrition.addLog({
+          name:      item.nom,
+          kcal:      c.kcal,
+          protein_g: c.prot,
+          carbs_g:   c.carbs,
+          fat_g:     c.fat,
+          meal_type: selectedMeal,
+        });
+      }
+      toast(`${alimentsData.length} aliment${alimentsData.length > 1 ? 's' : ''} ajouté${alimentsData.length > 1 ? 's' : ''} au journal !`, 'success');
+      setTimeout(() => window.location.href = '/pages/dashboard.html', 1000);
+    } catch (err) {
+      toast(err.message, 'error');
+      setLoading(btn, false);
+    }
+  });
+
+  // ── Recettes ─────────────────────────────────────────────────
+  let allRecipes = [];
+  let activeCategory = 'all';
+  let openRecipe = null;
+
+  async function loadRecipes(cat) {
+    try {
+      const data = await API.nutrition.recipes(cat);
+      allRecipes = data || [];
+      renderRecipes(allRecipes);
+    } catch (err) {
+      console.error('[loadRecipes] erreur:', err.message, err);
+      renderRecipesEmpty('Impossible de charger les recettes. (' + err.message + ')');
+    }
+  }
+
+  function renderRecipes(list) {
+    const grid = document.getElementById('recipes-grid');
+    if (!list || list.length === 0) {
+      renderRecipesEmpty('Aucune recette disponible pour le moment.');
+      return;
+    }
+    grid.innerHTML = list.map(r => `
+      <div class="recipe-card" onclick="openRecipeModal('${escHtml(String(r.id))}')">
+        <div class="recipe-card__img">
+          ${r.photo_url
+            ? `<img src="${escHtml(r.photo_url)}" alt="${escHtml(r.nom)}">`
+            : '🍽️'}
+        </div>
+        <div class="recipe-card__body">
+          <div class="recipe-card__name">${escHtml(r.nom)}</div>
+          <div class="recipe-card__kcal">${r.calories_total} kcal</div>
+          <div class="recipe-card__macros">
+            P&nbsp;${r.proteines_total ?? 0}g · G&nbsp;${r.glucides_total ?? 0}g · L&nbsp;${r.lipides_total ?? 0}g
+          </div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  function renderRecipesEmpty(msg) {
+    document.getElementById('recipes-grid').innerHTML = `
+      <div class="recipes-empty">
+        <div class="recipes-empty__icon">🥗</div>
+        <div class="recipes-empty__text">${msg}</div>
+      </div>`;
+  }
+
+  // Filtres
+  document.querySelectorAll('.category-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeCategory = pill.dataset.cat;
+      loadRecipes(activeCategory);
+    });
+  });
+
+  // Modal
+  window.openRecipeModal = function(id) {
+    const r = allRecipes.find(x => String(x.id) === String(id));
+    if (!r) return;
+    openRecipe = r;
+
+    // Hero
+    const hero = document.getElementById('modal-hero');
+    const emoji = document.getElementById('modal-hero-emoji');
+    if (r.photo_url) {
+      hero.style.backgroundImage = `url(${r.photo_url})`;
+      hero.style.backgroundSize = 'cover';
+      hero.style.backgroundPosition = 'center';
+      emoji.style.display = 'none';
+    } else {
+      hero.style.backgroundImage = '';
+      emoji.style.display = '';
+      emoji.textContent = '🍽️';
+    }
+
+    document.getElementById('modal-name').textContent    = r.nom;
+    document.getElementById('modal-kcal').textContent    = r.calories_total + ' kcal';
+    document.getElementById('modal-protein').textContent = (r.proteines_total ?? 0) + 'g';
+    document.getElementById('modal-carbs').textContent   = (r.glucides_total ?? 0) + 'g';
+    document.getElementById('modal-fat').textContent     = (r.lipides_total ?? 0) + 'g';
+
+    // Ingrédients (stockés en JSONB : [{ "nom": "...", "quantite": "..." }])
+    const ingrSection = document.getElementById('modal-ingredients-section');
+    const ingrList    = document.getElementById('modal-ingredients');
+    const ingredients = Array.isArray(r.ingredients) ? r.ingredients : [];
+    if (ingredients.length > 0) {
+      ingrList.innerHTML = ingredients.map(ing => `
+        <div class="recipe-ingredient">
+          <span class="recipe-ingredient__name">${escHtml(ing.nom || ing.name || ing)}</span>
+          <span class="recipe-ingredient__qty">${escHtml(ing.quantite || ing.quantity || '')}</span>
+        </div>
+      `).join('');
+      ingrSection.style.display = '';
+    } else {
+      ingrSection.style.display = 'none';
+    }
+
+    // Instructions
+    const instrSection = document.getElementById('modal-instructions-section');
+    const instrText    = document.getElementById('modal-instructions');
+    if (r.instructions) {
+      instrText.textContent = r.instructions;
+      instrSection.style.display = '';
+    } else {
+      instrSection.style.display = 'none';
+    }
+
+    document.getElementById('recipe-modal-overlay').classList.add('open');
+    document.body.style.overflow = 'hidden';
+  };
+
+  window.closeRecipeModal = function() {
+    document.getElementById('recipe-modal-overlay').classList.remove('open');
+    document.body.style.overflow = '';
+    openRecipe = null;
+  };
+
+  window.handleRecipeOverlayClick = function(e) {
+    if (e.target === document.getElementById('recipe-modal-overlay')) closeRecipeModal();
+  };
+
+  // Ajouter au journal depuis le modal
+  document.getElementById('modal-add-btn').addEventListener('click', async () => {
+    if (!openRecipe) return;
+    const btn = document.getElementById('modal-add-btn');
+    setLoading(btn, true);
+    try {
+      await API.nutrition.addLog({
+        name:      openRecipe.nom,
+        kcal:      openRecipe.calories_total,
+        protein_g: openRecipe.proteines_total ?? 0,
+        carbs_g:   openRecipe.glucides_total ?? 0,
+        fat_g:     openRecipe.lipides_total ?? 0,
+        meal_type: openRecipe.categorie === 'breakfast' ? 'breakfast'
+                 : openRecipe.categorie === 'meal'      ? 'lunch'
+                 : 'snack'
+      });
+      toast(`${openRecipe.nom} ajouté au journal !`, 'success');
+      closeRecipeModal();
+      setTimeout(() => window.location.href = '/pages/dashboard.html', 1000);
+    } catch (err) {
+      toast(err.message, 'error');
+      setLoading(btn, false);
+    }
+  });
+
+  // Chargement initial
+  loadRecipes('all');
+});
+
+function escHtml(str) {
+  return String(str ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#1A1A1A">
+  <title>Admin — AppKcal</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    body { background:#111; color:#eee; }
+    .admin-page { min-height:100dvh; padding:24px 16px; }
+    .admin-login { max-width:360px; margin:80px auto 0; background:#1e1e1e; padding:32px; border-radius:16px; }
+    .admin-login h1 { font-size:1.4rem; margin-bottom:24px; color:var(--olive); }
+    .admin-login .form-input { background:#2a2a2a; border-color:#333; color:#eee; }
+    .admin-login .form-input::placeholder { color:#666; }
+    .admin-login .form-input:focus { border-color:var(--olive); }
+
+    .admin-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:24px; }
+    .admin-header h1 { font-size:1.4rem; color:var(--olive); }
+
+    .stat-grid { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:24px; }
+    .stat-box { background:#1e1e1e; border-radius:12px; padding:16px; }
+    .stat-box__val { font-size:2rem; font-weight:800; color:var(--olive); }
+    .stat-box__lbl { font-size:.8rem; color:#888; margin-top:4px; }
+
+    .admin-section { margin-bottom:24px; }
+    .admin-section h2 { font-size:1rem; font-weight:700; color:#aaa; text-transform:uppercase; letter-spacing:.05em; margin-bottom:12px; }
+
+    .admin-table { width:100%; border-collapse:collapse; }
+    .admin-table th { text-align:left; font-size:.75rem; color:#666; padding:8px; border-bottom:1px solid #2a2a2a; }
+    .admin-table td { padding:10px 8px; font-size:.85rem; border-bottom:1px solid #1e1e1e; }
+    .admin-table tr:hover td { background:#1e1e1e; }
+
+    .admin-btn { padding:6px 12px; border-radius:6px; font-size:.8rem; font-weight:600; cursor:pointer; border:none; }
+    .admin-btn--red { background:#c0392b; color:#fff; }
+    .admin-btn--green { background:var(--olive); color:#fff; }
+
+    .code-pill { background:#2a2a2a; padding:4px 10px; border-radius:6px; font-family:monospace; letter-spacing:.1em; font-size:.9rem; color:var(--olive-xl); }
+
+    .admin-btn--yellow { background:#d97706; color:#fff; }
+    .admin-btn--gray   { background:#444; color:#ccc; }
+
+    /* Recipe form modal */
+    .recipe-form-overlay {
+      position:fixed; inset:0; background:rgba(0,0,0,.7);
+      z-index:500; display:none; align-items:flex-end;
+    }
+    .recipe-form-overlay.open { display:flex; }
+    .recipe-form-sheet {
+      width:100%; background:#1e1e1e; border-radius:16px 16px 0 0;
+      padding:24px 20px 40px; max-height:92dvh; overflow-y:auto;
+    }
+    .recipe-form-sheet h3 { font-size:1.1rem; font-weight:700; color:#eee; margin-bottom:20px; }
+    .recipe-form-sheet .form-input,
+    .recipe-form-sheet .form-select,
+    .recipe-form-sheet textarea {
+      background:#2a2a2a; border-color:#333; color:#eee;
+      width:100%; box-sizing:border-box;
+    }
+    .recipe-form-sheet .form-input::placeholder,
+    .recipe-form-sheet textarea::placeholder { color:#555; }
+    .recipe-form-sheet .form-label { color:#aaa; }
+    .recipe-form-sheet textarea {
+      border:2px solid #333; border-radius:10px; padding:12px;
+      font-size:.9rem; resize:vertical; min-height:80px;
+      font-family:inherit; line-height:1.5;
+    }
+    .recipe-form-sheet textarea:focus { outline:none; border-color:var(--olive); }
+    .recipe-form-row { display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+    .recipe-form-row-4 { display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:8px; }
+
+    #admin-panel { display:none; }
+    #login-panel { display:block; }
+  </style>
+</head>
+<body>
+
+<div class="admin-page">
+
+  <!-- Login -->
+  <div id="login-panel">
+    <div class="admin-login">
+      <h1>🔐 Admin AppKcal</h1>
+      <div class="form-group mb-16">
+        <input class="form-input" type="text" id="admin-user" placeholder="Username" autocomplete="off">
+      </div>
+      <div class="form-group mb-24">
+        <input class="form-input" type="password" id="admin-pass" placeholder="Password">
+      </div>
+      <button class="btn btn--primary btn--full" onclick="adminLogin()">Accéder</button>
+    </div>
+  </div>
+
+  <!-- Panel -->
+  <div id="admin-panel">
+    <div class="admin-header">
+      <h1>⚙️ Admin Panel</h1>
+      <button class="admin-btn admin-btn--red" onclick="adminLogout()">Quitter</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stat-grid" id="stat-grid">
+      <div class="stat-box"><div class="stat-box__val">—</div><div class="stat-box__lbl">Utilisateurs</div></div>
+      <div class="stat-box"><div class="stat-box__val">—</div><div class="stat-box__lbl">Logs nutrition</div></div>
+      <div class="stat-box"><div class="stat-box__val">—</div><div class="stat-box__lbl">Actifs aujourd'hui</div></div>
+      <div class="stat-box"><div class="stat-box__val">—</div><div class="stat-box__lbl">Codes dispo</div></div>
+    </div>
+
+    <!-- Invite codes -->
+    <div class="admin-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Codes invitation</h2>
+        <button class="admin-btn admin-btn--green" onclick="createInvites()">+ Générer</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr><th>Code</th><th>Statut</th><th>Créé le</th><th></th></tr></thead>
+          <tbody id="invites-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Users -->
+    <div class="admin-section">
+      <h2>Derniers utilisateurs</h2>
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr><th>Email</th><th>Onboarding</th><th>Inscrit le</th><th></th></tr></thead>
+          <tbody id="users-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Recettes -->
+    <div class="admin-section">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <h2 style="margin:0">Recettes</h2>
+        <button class="admin-btn admin-btn--green" onclick="openRecipeForm()">+ Ajouter</button>
+      </div>
+      <div style="overflow-x:auto">
+        <table class="admin-table">
+          <thead><tr><th>Nom</th><th>Catégorie</th><th>Calories</th><th>Visible</th><th></th></tr></thead>
+          <tbody id="recipes-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Recipe form modal ── -->
+<div class="recipe-form-overlay" id="recipe-form-overlay" onclick="handleRecipeFormOverlay(event)">
+  <div class="recipe-form-sheet">
+    <h3 id="recipe-form-title">Ajouter une recette</h3>
+    <input type="hidden" id="recipe-edit-id">
+
+    <div class="form-group mb-12">
+      <label class="form-label">Nom *</label>
+      <input class="form-input" type="text" id="rf-nom" placeholder="Ex: Bol de riz poulet">
+    </div>
+
+    <div class="form-group mb-12">
+      <label class="form-label">Description</label>
+      <textarea id="rf-description" placeholder="Courte description du plat"></textarea>
+    </div>
+
+    <div class="form-group mb-12">
+      <label class="form-label">Catégorie *</label>
+      <select class="form-input form-select" id="rf-categorie">
+        <option value="">-- Choisir --</option>
+        <option value="breakfast">Petit-déj</option>
+        <option value="meal">Repas</option>
+        <option value="snack">Snack</option>
+        <option value="dessert">Dessert</option>
+        <option value="shaker">Shaker</option>
+      </select>
+    </div>
+
+    <div class="recipe-form-row-4 mb-12">
+      <div class="form-group">
+        <label class="form-label">Kcal *</label>
+        <input class="form-input" type="number" id="rf-calories" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Prot. (g)</label>
+        <input class="form-input" type="number" id="rf-proteines" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Gluc. (g)</label>
+        <input class="form-input" type="number" id="rf-glucides" placeholder="0">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Lip. (g)</label>
+        <input class="form-input" type="number" id="rf-lipides" placeholder="0">
+      </div>
+    </div>
+
+    <div class="recipe-form-row mb-12">
+      <div class="form-group">
+        <label class="form-label">Temps prep. (min)</label>
+        <input class="form-input" type="number" id="rf-temps" placeholder="15">
+      </div>
+      <div class="form-group">
+        <label class="form-label">URL photo</label>
+        <input class="form-input" type="text" id="rf-photo" placeholder="https://...">
+      </div>
+    </div>
+
+    <div class="form-group mb-12">
+      <label class="form-label">Ingrédients (JSON)</label>
+      <textarea id="rf-ingredients" style="min-height:100px;font-family:monospace;font-size:.8rem" placeholder='[{"nom":"Riz","quantite":"120g"},{"nom":"Poulet","quantite":"180g"}]'></textarea>
+    </div>
+
+    <div class="form-group mb-20">
+      <label class="form-label">Instructions</label>
+      <textarea id="rf-instructions" style="min-height:120px" placeholder="1. Étape 1&#10;2. Étape 2"></textarea>
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="admin-btn admin-btn--gray" style="flex:1;padding:12px" onclick="closeRecipeForm()">Annuler</button>
+      <button class="admin-btn admin-btn--green" style="flex:2;padding:12px;font-size:.95rem" id="recipe-save-btn" onclick="saveRecipe()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+let adminCreds = null;
+
+function adminLogin() {
+  const u = document.getElementById('admin-user').value;
+  const p = document.getElementById('admin-pass').value;
+  adminCreds = { username: u, password: p };
+  loadAdmin();
+}
+
+function adminLogout() {
+  localStorage.removeItem('kcal_session');
+  localStorage.removeItem('kcal_user');
+  window.location.href = '/pages/login.html';
+}
+
+async function adminFetch(path, method = 'GET', body = null) {
+  const headers = {
+    'Content-Type': 'application/json',
+    'username': adminCreds.username,
+    'password': adminCreds.password
+  };
+  const res = await fetch('/api/admin' + path, {
+    method,
+    headers,
+    body: body ? JSON.stringify(body) : null
+  });
+  if (res.status === 403) throw new Error('Accès refusé');
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Erreur');
+  return data;
+}
+
+async function loadAdmin() {
+  try {
+    const stats = await adminFetch('/stats');
+    document.getElementById('login-panel').style.display = 'none';
+    document.getElementById('admin-panel').style.display = 'block';
+
+    // Stats grid
+    const boxes = document.querySelectorAll('.stat-box');
+    const vals = [stats.total_users, stats.total_logs, stats.active_today, stats.invite_codes.available];
+    boxes.forEach((b, i) => { b.querySelector('.stat-box__val').textContent = vals[i] ?? '—'; });
+
+    // Invites
+    const invites = await adminFetch('/invites');
+    document.getElementById('invites-tbody').innerHTML = invites.map(inv => `
+      <tr>
+        <td><span class="code-pill">${inv.code}</span></td>
+        <td>${inv.used ? '✅ Utilisé' : '⏳ Dispo'}</td>
+        <td>${new Date(inv.created_at).toLocaleDateString('fr-FR')}</td>
+        <td><button class="admin-btn admin-btn--red" onclick="deleteInvite('${inv.id}')">✕</button></td>
+      </tr>`).join('');
+
+    // Users
+    const { users } = await adminFetch('/users');
+    document.getElementById('users-tbody').innerHTML = users.map(u => `
+      <tr>
+        <td>${u.email || '—'}</td>
+        <td>${u.onboarding_done ? '✅' : '⏳'}</td>
+        <td>${new Date(u.created_at).toLocaleDateString('fr-FR')}</td>
+        <td><button class="admin-btn admin-btn--red" onclick="deleteUser('${u.id}')">✕</button></td>
+      </tr>`).join('');
+
+    // Recettes
+    await loadRecipes();
+
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function loadRecipes() {
+  try {
+    const recipes = await adminFetch('/recipes');
+    const catLabel = { breakfast:'Petit-déj', meal:'Repas', snack:'Snack', dessert:'Dessert', shaker:'Shaker' };
+    document.getElementById('recipes-tbody').innerHTML = recipes.length === 0
+      ? '<tr><td colspan="5" style="color:#666;text-align:center;padding:20px">Aucune recette</td></tr>'
+      : recipes.map(r => `
+        <tr>
+          <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.nom}</td>
+          <td>${catLabel[r.categorie] || r.categorie}</td>
+          <td>${r.calories_total} kcal</td>
+          <td>${r.is_visible ? '👁️' : '🙈'}</td>
+          <td style="display:flex;gap:6px;flex-wrap:wrap">
+            <button class="admin-btn admin-btn--green" onclick="openRecipeForm('${r.id}')">✏️</button>
+            <button class="admin-btn admin-btn--yellow" onclick="toggleVisibility('${r.id}', ${r.is_visible})">${r.is_visible ? 'Masquer' : 'Afficher'}</button>
+            <button class="admin-btn admin-btn--red" onclick="deleteRecipe('${r.id}')">✕</button>
+          </td>
+        </tr>`).join('');
+  } catch (err) {
+    toast('Erreur chargement recettes: ' + err.message, 'error');
+  }
+}
+
+// ── Recipe form ────────────────────────────────────────────────
+let _allRecipes = [];
+
+async function openRecipeForm(id) {
+  document.getElementById('recipe-edit-id').value = id || '';
+  document.getElementById('recipe-form-title').textContent = id ? 'Modifier la recette' : 'Ajouter une recette';
+
+  // Reset form
+  ['rf-nom','rf-description','rf-categorie','rf-calories','rf-proteines','rf-glucides',
+   'rf-lipides','rf-temps','rf-photo','rf-ingredients','rf-instructions'].forEach(f => {
+    document.getElementById(f).value = '';
+  });
+
+  if (id) {
+    try {
+      const recipes = await adminFetch('/recipes');
+      const r = recipes.find(x => String(x.id) === String(id));
+      if (r) {
+        document.getElementById('rf-nom').value          = r.nom || '';
+        document.getElementById('rf-description').value  = r.description || '';
+        document.getElementById('rf-categorie').value    = r.categorie || '';
+        document.getElementById('rf-calories').value     = r.calories_total || '';
+        document.getElementById('rf-proteines').value    = r.proteines_total || '';
+        document.getElementById('rf-glucides').value     = r.glucides_total || '';
+        document.getElementById('rf-lipides').value      = r.lipides_total || '';
+        document.getElementById('rf-temps').value        = r.temps_preparation || '';
+        document.getElementById('rf-photo').value        = r.photo_url || '';
+        document.getElementById('rf-ingredients').value  = r.ingredients ? JSON.stringify(r.ingredients, null, 2) : '';
+        document.getElementById('rf-instructions').value = r.instructions || '';
+      }
+    } catch {}
+  }
+
+  document.getElementById('recipe-form-overlay').classList.add('open');
+}
+
+function closeRecipeForm() {
+  document.getElementById('recipe-form-overlay').classList.remove('open');
+}
+
+function handleRecipeFormOverlay(e) {
+  if (e.target === document.getElementById('recipe-form-overlay')) closeRecipeForm();
+}
+
+async function saveRecipe() {
+  const id  = document.getElementById('recipe-edit-id').value;
+  const nom = document.getElementById('rf-nom').value.trim();
+  const calories_total = document.getElementById('rf-calories').value;
+  const categorie = document.getElementById('rf-categorie').value;
+
+  if (!nom || !calories_total || !categorie) {
+    toast('Nom, calories et catégorie sont requis', 'error');
+    return;
+  }
+
+  let ingredients = null;
+  const ingrRaw = document.getElementById('rf-ingredients').value.trim();
+  if (ingrRaw) {
+    try { ingredients = JSON.parse(ingrRaw); }
+    catch { toast('JSON ingrédients invalide', 'error'); return; }
+  }
+
+  const body = {
+    nom,
+    description:       document.getElementById('rf-description').value.trim() || null,
+    instructions:      document.getElementById('rf-instructions').value.trim() || null,
+    calories_total:    Number(calories_total),
+    proteines_total:   document.getElementById('rf-proteines').value || null,
+    glucides_total:    document.getElementById('rf-glucides').value || null,
+    lipides_total:     document.getElementById('rf-lipides').value || null,
+    categorie,
+    temps_preparation: document.getElementById('rf-temps').value || null,
+    photo_url:         document.getElementById('rf-photo').value.trim() || null,
+    ingredients
+  };
+
+  const btn = document.getElementById('recipe-save-btn');
+  btn.textContent = '...';
+  btn.disabled = true;
+  try {
+    if (id) {
+      await adminFetch('/recipes/' + id, 'PUT', body);
+      toast('Recette mise à jour', 'success');
+    } else {
+      await adminFetch('/recipes', 'POST', body);
+      toast('Recette ajoutée !', 'success');
+    }
+    closeRecipeForm();
+    loadRecipes();
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    btn.textContent = 'Sauvegarder';
+    btn.disabled = false;
+  }
+}
+
+async function toggleVisibility(id, currentlyVisible) {
+  try {
+    await adminFetch('/recipes/' + id + '/visibility', 'PATCH', { is_visible: !currentlyVisible });
+    toast(currentlyVisible ? 'Recette masquée' : 'Recette visible', 'success');
+    loadRecipes();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteRecipe(id) {
+  if (!confirm('Supprimer définitivement cette recette ? Cette action est irréversible.')) return;
+  try {
+    await adminFetch('/recipes/' + id, 'DELETE');
+    toast('Recette supprimée', 'success');
+    loadRecipes();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function createInvites() {
+  const count = prompt('Combien de codes générer ?', '5');
+  if (!count) return;
+  try {
+    const codes = await adminFetch('/invites', 'POST', { count: Number(count) });
+    toast(`${codes.length} code(s) créé(s) !`, 'success');
+    loadAdmin();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteInvite(id) {
+  if (!confirm('Supprimer ce code ?')) return;
+  try {
+    await adminFetch('/invites/' + id, 'DELETE');
+    toast('Code supprimé', 'success');
+    loadAdmin();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+async function deleteUser(id) {
+  if (!confirm('Supprimer définitivement cet utilisateur ?')) return;
+  try {
+    await adminFetch('/users/' + id, 'DELETE');
+    toast('Utilisateur supprimé', 'success');
+    loadAdmin();
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+</script>
+</body>
+</html>

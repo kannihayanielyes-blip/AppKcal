@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#6B7C45">
+  <title>Profil — AppKcal</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .profile-page { min-height:100dvh; padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+    .profile-hero { background:var(--olive); padding:32px 24px 40px; text-align:center; color:var(--white); }
+    .profile-avatar {
+      width:80px; height:80px; border-radius:50%;
+      background:rgba(255,255,255,.2);
+      display:flex; align-items:center; justify-content:center;
+      font-size:2rem; font-weight:700;
+      margin:0 auto 12px; overflow:hidden;
+      border:3px solid rgba(255,255,255,.4);
+      cursor:pointer; position:relative;
+      -webkit-tap-highlight-color:transparent;
+    }
+    .profile-avatar img { width:100%; height:100%; object-fit:cover; }
+    .profile-avatar__overlay {
+      position:absolute; inset:0; border-radius:50%;
+      background:rgba(0,0,0,.35);
+      display:flex; align-items:center; justify-content:center;
+      opacity:0; transition:opacity .15s;
+      font-size:1.3rem;
+    }
+    .profile-avatar:active .profile-avatar__overlay { opacity:1; }
+    .profile-hero__name { font-size:1.4rem; font-weight:800; }
+    .profile-hero__email { font-size:.85rem; opacity:.8; margin-top:4px; }
+
+    .profile-stats { display:flex; gap:1px; background:var(--cream-d); }
+    .profile-stat { flex:1; background:var(--white); padding:16px; text-align:center; }
+    .profile-stat__val { font-size:1.3rem; font-weight:800; color:var(--olive); }
+    .profile-stat__lbl { font-size:.72rem; color:var(--text-muted); margin-top:2px; }
+
+    .profile-section { padding:20px 16px 0; }
+    .profile-section h3 { font-size:.85rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:10px; }
+
+    .profile-row {
+      background:var(--white);
+      border-radius:var(--radius-md);
+      margin-bottom:1px;
+      display:flex;
+      align-items:center;
+      padding:16px;
+      gap:12px;
+    }
+    .profile-row:first-of-type { border-radius:var(--radius-md) var(--radius-md) 0 0; }
+    .profile-row:last-of-type  { border-radius:0 0 var(--radius-md) var(--radius-md); margin-bottom:0; }
+    .profile-row:only-of-type  { border-radius:var(--radius-md); }
+    .profile-row__icon { font-size:1.2rem; width:32px; text-align:center; }
+    .profile-row__body { flex:1; }
+    .profile-row__label { font-size:.85rem; color:var(--text-muted); }
+    .profile-row__value { font-size:.95rem; font-weight:600; margin-top:1px; }
+    .profile-row__arrow { color:var(--text-muted); }
+  </style>
+</head>
+<body>
+
+<div class="profile-page">
+  <!-- Back button -->
+  <div style="padding:12px 16px 0;background:var(--olive)">
+    <button onclick="history.length>1?history.back():location.href='/pages/dashboard.html'" style="font-size:1.3rem;color:rgba(255,255,255,.8);background:none;border:none;cursor:pointer">←</button>
+  </div>
+
+  <!-- Hero -->
+  <div class="profile-hero" style="padding-top:16px">
+    <div class="profile-avatar" id="profile-avatar" onclick="document.getElementById('avatar-input').click()">
+      <div class="profile-avatar__overlay">📷</div>
+    </div>
+    <input type="file" id="avatar-input" accept="image/jpeg,image/png,image/webp" style="display:none">
+    <div class="profile-hero__name" id="profile-name">…</div>
+    <div class="profile-hero__email" id="profile-email">…</div>
+  </div>
+
+  <!-- Stats -->
+  <div class="profile-stats">
+    <div class="profile-stat">
+      <div class="profile-stat__val" id="stat-streak">0</div>
+      <div class="profile-stat__lbl">🔥 Streak</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat__val" id="stat-kcal">—</div>
+      <div class="profile-stat__lbl">🎯 Objectif kcal</div>
+    </div>
+    <div class="profile-stat">
+      <div class="profile-stat__val" id="stat-weight">—</div>
+      <div class="profile-stat__lbl">⚖️ Poids (kg)</div>
+    </div>
+  </div>
+
+  <!-- Body info -->
+  <div class="profile-section">
+    <h3>Mon profil</h3>
+    <div class="profile-row">
+      <div class="profile-row__icon">🎂</div>
+      <div class="profile-row__body">
+        <div class="profile-row__label">Âge</div>
+        <div class="profile-row__value" id="info-age">—</div>
+      </div>
+    </div>
+    <div class="profile-row">
+      <div class="profile-row__icon">📏</div>
+      <div class="profile-row__body">
+        <div class="profile-row__label">Taille</div>
+        <div class="profile-row__value" id="info-height">—</div>
+      </div>
+    </div>
+    <div class="profile-row">
+      <div class="profile-row__icon">🎯</div>
+      <div class="profile-row__body">
+        <div class="profile-row__label">Objectif</div>
+        <div class="profile-row__value" id="info-goal">—</div>
+      </div>
+    </div>
+    <div class="profile-row">
+      <div class="profile-row__icon">🏃</div>
+      <div class="profile-row__body">
+        <div class="profile-row__label">Activité</div>
+        <div class="profile-row__value" id="info-activity">—</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Log weight -->
+  <div class="profile-section">
+    <h3>Poids du jour</h3>
+    <div class="profile-row">
+      <div class="profile-row__icon">⚖️</div>
+      <input class="form-input" type="number" id="weight-input" placeholder="ex: 72.5" step="0.1" inputmode="decimal" style="border:none;padding:0;font-size:.95rem;font-weight:600">
+      <button class="btn btn--primary" id="weight-save-btn" style="padding:8px 16px;font-size:.85rem">Sauver</button>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="profile-section" style="padding-bottom:24px">
+    <h3>Compte</h3>
+    <div class="profile-row" style="cursor:pointer" onclick="window.location.href='/pages/onboarding.html'">
+      <div class="profile-row__icon">✏️</div>
+      <div class="profile-row__body">
+        <div class="profile-row__value">Modifier mon profil</div>
+      </div>
+      <div class="profile-row__arrow">›</div>
+    </div>
+    <div class="profile-row" style="cursor:pointer" onclick="logout()">
+      <div class="profile-row__icon">🚪</div>
+      <div class="profile-row__body">
+        <div class="profile-row__value" style="color:var(--danger)">Se déconnecter</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="/pages/dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Accueil
+  </a>
+  <a class="nav-item" href="/pages/feed.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Feed
+  </a>
+  <a class="nav-item nav-item--fab" href="/pages/photo.html">
+    <div class="nav-fab-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff"/><circle cx="12" cy="13" r="4" stroke="#fff"/></svg>
+    </div>
+    <span>Photo IA</span>
+  </a>
+  <a class="nav-item" href="/pages/sport.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M7 3l-4 9 4 9M17 3l4 9-4 9"/></svg>
+    Sport
+  </a>
+  <a class="nav-item" href="/pages/calendar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Calendrier
+  </a>
+</nav>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+const GOAL_LABELS = { lose:'Perte de poids', maintain:'Maintien', gain:'Prise de muscle' };
+const ACT_LABELS  = { sedentary:'Sédentaire', light:'Légèrement actif', moderate:'Modérément actif', active:'Très actif', very_active:'Athlète' };
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+
+  let profile, streakData;
+  try {
+    [profile, streakData] = await Promise.all([
+      API.user.profile(),
+      API.user.streak()
+    ]);
+    console.log('[profile] données Supabase:', profile);
+  } catch (err) {
+    console.error('[profile] erreur chargement:', err);
+    toast('Erreur de chargement du profil', 'error');
+    return;
+  }
+
+  // Hero
+  document.getElementById('profile-name').textContent  = profile.username || 'Utilisateur';
+  document.getElementById('profile-email').textContent = getUser()?.email || '';
+  renderAvatar(profile.avatar_url, profile.username);
+
+  // Stats
+  document.getElementById('stat-streak').textContent = streakData.streak || 0;
+  document.getElementById('stat-kcal').textContent   = profile.daily_kcal_target || '—';
+  document.getElementById('stat-weight').textContent = profile.weight_kg || '—';
+
+  // Body info
+  if (profile.birthdate) {
+    const age = new Date().getFullYear() - new Date(profile.birthdate).getFullYear();
+    document.getElementById('info-age').textContent = age + ' ans';
+  }
+  if (profile.height_cm) document.getElementById('info-height').textContent = profile.height_cm + ' cm';
+  if (profile.goal)           document.getElementById('info-goal').textContent     = GOAL_LABELS[profile.goal] || profile.goal;
+  if (profile.activity_level) document.getElementById('info-activity').textContent = ACT_LABELS[profile.activity_level] || profile.activity_level;
+
+  // Pre-fill weight
+  if (profile.weight_kg) document.getElementById('weight-input').value = profile.weight_kg;
+}); // end DOMContentLoaded
+
+document.getElementById('weight-save-btn').addEventListener('click', async () => {
+  const w = document.getElementById('weight-input').value;
+  if (!w) { toast('Entre un poids', 'error'); return; }
+  const btn = document.getElementById('weight-save-btn');
+  setLoading(btn, true);
+  try {
+    await API.user.logWeight({ weight_kg: w });
+    toast('Poids enregistré !', 'success');
+    document.getElementById('stat-weight').textContent = w;
+  } catch (err) {
+    toast(err.message, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+function renderAvatar(url, username) {
+  const av = document.getElementById('profile-avatar');
+  const overlay = '<div class="profile-avatar__overlay">📷</div>';
+  if (url) {
+    av.innerHTML = `<img src="${url}" alt="avatar">${overlay}`;
+  } else {
+    const initial = (username || '?')[0].toUpperCase();
+    av.innerHTML = `${initial}${overlay}`;
+  }
+}
+
+document.getElementById('avatar-input').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  if (file.size > 2 * 1024 * 1024) {
+    toast('Image trop lourde (max 2MB)', 'error');
+    e.target.value = '';
+    return;
+  }
+
+  const av = document.getElementById('profile-avatar');
+  av.style.opacity = '.5';
+
+  const fd = new FormData();
+  fd.append('avatar', file);
+
+  try {
+    const { avatar_url } = await API.user.uploadAvatar(fd);
+    if (avatar_url) {
+      const user = getUser();
+      if (user) { user.avatar_url = avatar_url; setUser(user); }
+      const username = document.getElementById('profile-name').textContent;
+      renderAvatar(avatar_url, username);
+      // Mettre à jour la bulle globale si présente
+      const bubble = document.getElementById('user-bubble-avatar');
+      if (bubble) bubble.innerHTML = `<img src="${avatar_url}" alt="avatar">`;
+      toast('Photo de profil mise à jour !', 'success');
+    }
+  } catch (err) {
+    toast(err.message || 'Erreur upload', 'error');
+  } finally {
+    av.style.opacity = '';
+    e.target.value = '';
+  }
+});
+
+async function logout() {
+  if (!confirm('Se déconnecter ?')) return;
+  try { await API.auth.logout(); } catch {}
+  clearSession();
+  window.location.href = '/pages/login.html';
+}
+</script>
+</body>
+</html>

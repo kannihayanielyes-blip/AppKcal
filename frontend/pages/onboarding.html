@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#6B7C45">
+  <title>Onboarding — AppKcal</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body data-page="onboarding">
+
+<div class="onboarding-page">
+  <!-- Header -->
+  <div class="onboarding-header">
+    <button class="onboarding-back" id="back-btn" style="display:none">
+      ← Retour
+    </button>
+    <div class="onboarding-steps">
+      <div class="onboarding-step-dot current"></div>
+      <div class="onboarding-step-dot"></div>
+      <div class="onboarding-step-dot"></div>
+      <div class="onboarding-step-dot"></div>
+      <div class="onboarding-step-dot"></div>
+      <div class="onboarding-step-dot"></div>
+    </div>
+  </div>
+
+  <!-- Steps -->
+  <div class="onboarding-body">
+
+    <!-- Step 1: Identité -->
+    <div class="onboarding-step active" data-step="1">
+      <div>
+        <h2 class="onboarding-step-title">Comment tu t'appelles ?</h2>
+        <p class="onboarding-step-subtitle">On va personnaliser ton expérience</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ob-username">Prénom</label>
+        <input class="form-input" type="text" id="ob-username" placeholder="Ton prénom" autocomplete="given-name" style="font-size:1.1rem">
+      </div>
+    </div>
+
+    <!-- Step 2: Genre & Âge -->
+    <div class="onboarding-step" data-step="2">
+      <div>
+        <h2 class="onboarding-step-title">À propos de toi</h2>
+        <p class="onboarding-step-subtitle">Pour calculer tes besoins nutritionnels</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Genre</label>
+        <div class="gender-row">
+          <button type="button" class="gender-btn" data-value="male">👨 Homme</button>
+          <button type="button" class="gender-btn" data-value="female">👩 Femme</button>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ob-birthdate">Date de naissance</label>
+        <input class="form-input" type="date" id="ob-birthdate" max="2010-01-01">
+      </div>
+    </div>
+
+    <!-- Step 3: Corps -->
+    <div class="onboarding-step" data-step="3">
+      <div>
+        <h2 class="onboarding-step-title">Taille & Poids</h2>
+        <p class="onboarding-step-subtitle">Pour calculer ton IMC et tes besoins</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ob-height">Taille (cm)</label>
+        <input class="form-input" type="number" id="ob-height" placeholder="175" min="100" max="250" inputmode="numeric">
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="ob-weight">Poids actuel (kg)</label>
+        <input class="form-input" type="number" id="ob-weight" placeholder="70" min="30" max="300" inputmode="decimal" step="0.1">
+      </div>
+    </div>
+
+    <!-- Step 4: Objectif -->
+    <div class="onboarding-step" data-step="4">
+      <div>
+        <h2 class="onboarding-step-title">Ton objectif</h2>
+        <p class="onboarding-step-subtitle">On va adapter tes apports caloriques</p>
+      </div>
+      <div class="option-grid">
+        <div class="option-card" data-group="goal" data-value="bulk">
+          <div class="option-card__icon">💪</div>
+          <div>
+            <div class="option-card__label">Prise de masse</div>
+            <div class="option-card__desc">Surplus de +200 kcal pour construire du muscle</div>
+          </div>
+        </div>
+        <div class="option-card" data-group="goal" data-value="maintain">
+          <div class="option-card__icon">⚖️</div>
+          <div>
+            <div class="option-card__label">Maintien</div>
+            <div class="option-card__desc">Calories à l'équilibre, garder son poids</div>
+          </div>
+        </div>
+        <div class="option-card" data-group="goal" data-value="cut">
+          <div class="option-card__icon">🔥</div>
+          <div>
+            <div class="option-card__label">Sèche / Perte de gras</div>
+            <div class="option-card__desc">Déficit de -200 kcal pour perdre du gras</div>
+          </div>
+        </div>
+        <div class="option-card" data-group="goal" data-value="rebalance">
+          <div class="option-card__icon">🥗</div>
+          <div>
+            <div class="option-card__label">Rééquilibrage alimentaire</div>
+            <div class="option-card__desc">Léger déficit de -100 kcal, manger mieux</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 5: Activité -->
+    <div class="onboarding-step" data-step="5">
+      <div>
+        <h2 class="onboarding-step-title">Ton niveau d'activité</h2>
+        <p class="onboarding-step-subtitle">En moyenne sur une semaine</p>
+      </div>
+      <div class="option-grid">
+        <div class="option-card" data-group="activity_level" data-value="sedentary">
+          <div class="option-card__icon">🛋️</div>
+          <div>
+            <div class="option-card__label">Sédentaire</div>
+            <div class="option-card__desc">Peu ou pas de sport</div>
+          </div>
+        </div>
+        <div class="option-card" data-group="activity_level" data-value="light">
+          <div class="option-card__icon">🚶</div>
+          <div>
+            <div class="option-card__label">Légèrement actif</div>
+            <div class="option-card__desc">1-3 séances / semaine</div>
+          </div>
+        </div>
+        <div class="option-card" data-group="activity_level" data-value="moderate">
+          <div class="option-card__icon">🏃</div>
+          <div>
+            <div class="option-card__label">Modérément actif</div>
+            <div class="option-card__desc">3-5 séances / semaine</div>
+          </div>
+        </div>
+        <div class="option-card" data-group="activity_level" data-value="active">
+          <div class="option-card__icon">🏋️</div>
+          <div>
+            <div class="option-card__label">Très actif</div>
+            <div class="option-card__desc">6-7 séances / semaine</div>
+          </div>
+        </div>
+        <div class="option-card" data-group="activity_level" data-value="very_active">
+          <div class="option-card__icon">🏆</div>
+          <div>
+            <div class="option-card__label">Athlète</div>
+            <div class="option-card__desc">Sport intensif quotidien</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 6: Préférences -->
+    <div class="onboarding-step" data-step="6">
+      <div>
+        <h2 class="onboarding-step-title">Régime & Allergies</h2>
+        <p class="onboarding-step-subtitle">Pour des suggestions adaptées (optionnel)</p>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Type de régime</label>
+        <div class="option-grid">
+          <div class="option-card" data-group="diet_type" data-value="standard">
+            <div class="option-card__icon">🍽️</div>
+            <div><div class="option-card__label">Omnivore</div></div>
+          </div>
+          <div class="option-card" data-group="diet_type" data-value="vegetarian">
+            <div class="option-card__icon">🥦</div>
+            <div><div class="option-card__label">Végétarien</div></div>
+          </div>
+          <div class="option-card" data-group="diet_type" data-value="vegan">
+            <div class="option-card__icon">🌱</div>
+            <div><div class="option-card__label">Vegan</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Allergies / Intolérances</label>
+        <div class="tags-container">
+          <div class="tag-chip" data-group="allergies" data-value="gluten">🌾 Gluten</div>
+          <div class="tag-chip" data-group="allergies" data-value="lactose">🥛 Lactose</div>
+          <div class="tag-chip" data-group="allergies" data-value="nuts">🥜 Fruits à coque</div>
+          <div class="tag-chip" data-group="allergies" data-value="eggs">🥚 Œufs</div>
+          <div class="tag-chip" data-group="allergies" data-value="fish">🐟 Poisson</div>
+          <div class="tag-chip" data-group="allergies" data-value="shellfish">🦐 Crustacés</div>
+          <div class="tag-chip" data-group="allergies" data-value="soy">🫘 Soja</div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /onboarding-body -->
+
+  <!-- Footer CTA -->
+  <div class="onboarding-footer">
+    <button id="next-btn" class="btn btn--primary btn--full">Continuer</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+</body>
+</html>

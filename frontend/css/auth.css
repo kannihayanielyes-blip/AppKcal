@@ -1,0 +1,276 @@
+/* ══════════════════════════════════════
+   AUTH PAGES (login, register, onboarding)
+══════════════════════════════════════ */
+
+.auth-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+/* ── Header ─────────────────────────────── */
+.auth-header {
+  padding: 24px 24px 0;
+  text-align: center;
+}
+
+.auth-logo {
+  width: 72px;
+  height: 72px;
+  background: var(--olive);
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+  font-size: 2rem;
+  box-shadow: 0 4px 20px rgba(107,124,69,.35);
+}
+
+.auth-title {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+.auth-subtitle {
+  font-size: .95rem;
+  color: var(--text-muted);
+}
+
+/* ── Body ───────────────────────────────── */
+.auth-body {
+  flex: 1;
+  padding: 32px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* ── Input group with icon ──────────────── */
+.input-wrapper {
+  position: relative;
+}
+
+.input-wrapper .form-input {
+  padding-left: 48px;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.input-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted);
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 4px;
+}
+
+/* ── Auth footer ────────────────────────── */
+.auth-footer {
+  padding: 16px 24px calc(24px + env(safe-area-inset-bottom));
+  text-align: center;
+  font-size: .875rem;
+  color: var(--text-muted);
+}
+
+.auth-footer a { font-weight: 600; }
+
+/* ══════════════════════════════════════
+   ONBOARDING
+══════════════════════════════════════ */
+
+.onboarding-page {
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  background: var(--cream);
+}
+
+.onboarding-header {
+  padding: 20px 24px 0;
+}
+
+.onboarding-steps {
+  display: flex;
+  gap: 6px;
+  margin-bottom: 20px;
+}
+
+.onboarding-step-dot {
+  flex: 1;
+  height: 4px;
+  border-radius: 99px;
+  background: var(--cream-d);
+  transition: background .3s;
+}
+.onboarding-step-dot.done    { background: var(--olive); }
+.onboarding-step-dot.current { background: var(--olive-l); }
+
+.onboarding-back {
+  padding: 8px 0;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .9rem;
+  font-weight: 500;
+  margin-bottom: 4px;
+}
+
+.onboarding-body {
+  flex: 1;
+  padding: 0 24px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.onboarding-step {
+  display: none;
+  flex-direction: column;
+  gap: 24px;
+  animation: step-in .3s ease;
+}
+.onboarding-step.active { display: flex; }
+
+@keyframes step-in {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+.onboarding-step-title {
+  font-size: 1.5rem;
+  font-weight: 800;
+}
+
+.onboarding-step-subtitle {
+  font-size: .9rem;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Option cards (goal / activity) */
+.option-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.option-card {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  border: 2px solid var(--cream-d);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  cursor: pointer;
+  transition: all .2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.option-card:active { transform: scale(.98); }
+.option-card.selected {
+  border-color: var(--olive);
+  background: #f0f4e8;
+}
+
+.option-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radius-sm);
+  background: var(--cream-d);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+  flex-shrink: 0;
+}
+
+.option-card__label { font-weight: 600; font-size: .95rem; }
+.option-card__desc  { font-size: .8rem; color: var(--text-muted); margin-top: 2px; }
+
+/* Gender pills */
+.gender-row {
+  display: flex;
+  gap: 10px;
+}
+.gender-btn {
+  flex: 1;
+  padding: 16px;
+  border: 2px solid var(--cream-d);
+  border-radius: var(--radius-md);
+  background: var(--white);
+  font-size: .95rem;
+  font-weight: 600;
+  text-align: center;
+  cursor: pointer;
+  transition: all .2s;
+}
+.gender-btn.selected {
+  border-color: var(--olive);
+  background: #f0f4e8;
+  color: var(--olive);
+}
+
+.onboarding-footer {
+  padding: 20px 24px calc(32px + env(safe-area-inset-bottom));
+}
+
+/* ── RGPD checkbox ──────────────────────── */
+.rgpd-label {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.rgpd-label input[type="checkbox"] {
+  width: 20px;
+  height: 20px;
+  min-width: 20px;
+  margin-top: 1px;
+  accent-color: var(--olive);
+  cursor: pointer;
+}
+
+.rgpd-text {
+  font-size: .8rem;
+  color: var(--text-muted);
+}
+
+/* Tag chips (allergies) */
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.tag-chip {
+  padding: 8px 14px;
+  border: 2px solid var(--cream-d);
+  border-radius: 99px;
+  font-size: .85rem;
+  font-weight: 500;
+  cursor: pointer;
+  background: var(--white);
+  transition: all .2s;
+}
+.tag-chip.selected {
+  border-color: var(--olive);
+  background: var(--olive);
+  color: var(--white);
+}
