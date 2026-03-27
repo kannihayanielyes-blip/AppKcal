@@ -1,7 +1,5 @@
 const { supabaseAdmin } = require('../../config/supabase');
 
-const HARDCODED_INVITE = '0203';
-
 // POST /api/invite/validate
 async function validateCode(req, res) {
   try {
@@ -11,15 +9,9 @@ async function validateCode(req, res) {
     if (!code) return res.status(400).json({ valid: false, error: 'Code requis' });
 
     const normalized = String(code).toUpperCase().trim();
-    console.log('[invite/validate] normalized :', normalized, '| match :', normalized === HARDCODED_INVITE);
+    console.log('[invite/validate] normalized :', normalized);
 
-    // Code hardcodé de test
-    if (normalized === HARDCODED_INVITE) {
-      console.log('[invite/validate] Code hardcodé accepté');
-      return res.json({ valid: true });
-    }
-
-    // Sinon vérifier en base
+    // Vérifier en base uniquement
     const { data, error } = await supabaseAdmin
       .from('invite_codes')
       .select('id, code, used')

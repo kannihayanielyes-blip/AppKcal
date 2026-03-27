@@ -27,34 +27,28 @@ async function register(req, res) {
     }
 
     const normalizedCode = String(invite_code).toUpperCase().trim();
-    const HARDCODED_INVITE = '0203';
 
-    console.log('[register] normalizedCode :', normalizedCode, '| match hardcoded :', normalizedCode === HARDCODED_INVITE);
+    console.log('[register] normalizedCode :', normalizedCode);
 
-    if (normalizedCode === HARDCODED_INVITE) {
-      // Code de test — autorisé directement
-      console.log('[register] Code hardcodé accepté, création du compte...');
-    } else {
-      // Vérifier en base
-      const { data: invite, error: inviteErr } = await supabaseAdmin
-        .from('invite_codes')
-        .select('*')
-        .eq('code', normalizedCode)
-        .eq('used', false)
-        .single();
+    // Vérifier en base uniquement
+    const { data: invite, error: inviteErr } = await supabaseAdmin
+      .from('invite_codes')
+      .select('*')
+      .eq('code', normalizedCode)
+      .eq('used', false)
+      .single();
 
-      console.log('[register] DB invite :', invite, '| error :', inviteErr?.message);
+    console.log('[register] DB invite :', invite, '| error :', inviteErr?.message);
 
-      if (inviteErr || !invite) {
-        return res.status(400).json({ error: 'Code d\'invitation invalide ou déjà utilisé' });
-      }
-
-      // Marquer comme utilisé
-      await supabaseAdmin
-        .from('invite_codes')
-        .update({ used: true, used_at: new Date().toISOString() })
-        .eq('id', invite.id);
+    if (inviteErr || !invite) {
+      return res.status(400).json({ error: 'Code d\'invitation invalide ou déjà utilisé' });
     }
+
+    // Marquer comme utilisé
+    await supabaseAdmin
+      .from('invite_codes')
+      .update({ used: true, used_at: new Date().toISOString() })
+      .eq('id', invite.id);
 
     // Create auth user
     const { data, error } = await supabase.auth.signUp({ email, password });

@@ -107,6 +107,8 @@ Return ONLY a valid JSON object (no markdown, no explanation, no extra text):
       }
     };
 
+    // Schéma de sortie stable (aligné avec photo.html) :
+    // { aliments:[{nom, quantite_g, calories, proteines_g, glucides_g, lipides_g}], total:{...} }
     console.log('[photoAnalyze] Normalized:', JSON.stringify(normalized, null, 2));
     res.json(normalized);
   } catch (err) {
