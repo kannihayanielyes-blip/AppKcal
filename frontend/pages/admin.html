@@ -458,6 +458,7 @@
       <div class="login-error" id="login-error"></div>
       <button type="submit" class="login-btn" id="login-btn">Se connecter</button>
     </form>
+    <a href="#" onclick="localStorage.removeItem('kcal_session');localStorage.removeItem('kcal_user');localStorage.removeItem('admin_token');window.location.href='/pages/login.html';return false;" style="display:block;text-align:center;margin-top:20px;font-size:13px;color:#48484A;text-decoration:underline;text-underline-offset:3px;">← Retour au login</a>
   </div>
 </div>
 
@@ -483,6 +484,9 @@
       <button class="nav-item" data-section="recipes"><span class="nav-icon">📖</span> Recettes</button>
     </nav>
     <div class="sidebar-footer">
+      <a href="/pages/dashboard.html" style="display:flex;align-items:center;gap:8px;padding:8px 12px;border-radius:7px;color:#8E8E93;font-size:13px;font-weight:500;text-decoration:none;transition:background .18s,color .18s;margin-bottom:4px;" onmouseover="this.style.background='#1C1C1E';this.style.color='#fff'" onmouseout="this.style.background='';this.style.color='#8E8E93'">
+        <span style="font-size:15px;width:18px;text-align:center">↗</span> Accéder à l'appli
+      </a>
       <div class="sidebar-user">
         <div class="sidebar-avatar">👤</div>
         <div class="sidebar-user-info">

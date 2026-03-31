@@ -547,24 +547,14 @@ JSON uniquement: {"recettes":[{"nom":"","description":"","categorie":"breakfast|
 async function getIngredients(req, res) {
   try {
     const { data, error } = await supabaseAdmin
-      .from('recettes')
-      .select('ingredients')
-      .eq('is_visible', true);
+      .from('ingredients')
+      .select('nom, categorie')
+      .not('categorie', 'in', '("autres","graisses")');
 
     if (error) return res.status(500).json({ error: 'Erreur serveur' });
 
-    const allNoms = [];
-    for (const recette of (data || [])) {
-      try {
-        const ingredients = recette.ingredients;
-        if (!Array.isArray(ingredients)) continue;
-        for (const ing of ingredients) {
-          if (ing?.nom && typeof ing.nom === 'string') allNoms.push(ing.nom);
-        }
-      } catch (_) { /* recette malformée, on passe */ }
-    }
-
-    const ingredients = [...new Set(allNoms)].sort((a, b) => a.localeCompare(b, 'fr'));
+    const ingredients = [...new Set((data || []).map(r => r.nom))]
+      .sort((a, b) => a.localeCompare(b, 'fr'));
     res.json({ ingredients });
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' });

@@ -487,6 +487,17 @@
   </div>
 </div>
 
+<div id="admin-panel-link" style="display:none;padding:0 16px 16px;">
+  <a href="/pages/admin.html" style="display:flex;align-items:center;gap:10px;padding:12px 16px;border-radius:10px;border:1px solid rgba(0,0,0,0.08);background:var(--white);text-decoration:none;color:var(--text-secondary);font-size:.875rem;font-weight:500;">
+    <span>🛠️</span>
+    <span>Panel Admin</span>
+    <span style="margin-left:auto;opacity:.4">›</span>
+  </a>
+</div>
+<script>
+  if (getUser()?.isAdmin) document.getElementById('admin-panel-link').style.display = 'block';
+</script>
+
 <!-- Bottom Nav -->
 <nav class="bottom-nav">
   <a class="nav-item" href="/pages/dashboard.html">

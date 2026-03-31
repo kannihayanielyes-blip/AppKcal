@@ -16,9 +16,8 @@ function initLogin() {
   const token = getToken();
   const u = getUser();
   if (token) {
-    if (u?.isAdmin)           window.location.replace('/pages/admin.html');
-    else if (u?.onboarding_done) window.location.replace('/pages/dashboard.html');
-    else                      window.location.replace('/pages/onboarding.html');
+    if (u?.onboarding_done) window.location.replace('/pages/dashboard.html');
+    else                    window.location.replace('/pages/onboarding.html');
     return;
   }
 
