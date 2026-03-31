@@ -12,7 +12,10 @@ async function analyzePhoto(req, res) {
 
     let imageData;
     if (req.body.image_base64) {
-      // Base64 from frontend
+      // Base64 from frontend — limit to ~4MB (4*1024*1024 chars ≈ 3MB binary)
+      if (req.body.image_base64.length > 4 * 1024 * 1024) {
+        return res.status(413).json({ error: 'Image trop volumineuse (max 3 MB)' });
+      }
       imageData = req.body.image_base64;
     } else {
       // Buffer from multer

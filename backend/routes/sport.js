@@ -18,10 +18,20 @@ router.patch('/exercices/:id', async (req, res) => {
   if (poids_kg !== undefined) updates.poids_kg = poids_kg;
   if (reps      !== undefined) updates.reps     = reps;
   if (series    !== undefined) updates.series   = series;
-  const { error } = await supabaseAdmin
-    .from('exercices_seance').update(updates).eq('id', id);
-  if (error) return res.status(400).json({ error: error.message });
-  res.json({ message: 'ok' });
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('exercices_seance')
+      .update(updates)
+      .eq('id', id)
+      .eq('user_id', req.user.id)
+      .select()
+      .single();
+    if (error) return res.status(400).json({ error: error.message });
+    if (!data)  return res.status(404).json({ error: 'Exercice introuvable' });
+    res.json({ message: 'ok' });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
 });
 
 // Historique séances

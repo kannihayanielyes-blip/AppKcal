@@ -130,6 +130,9 @@ async function getWeightHistory(req, res) {
 async function logWeight(req, res) {
   try {
     const { weight_kg, date } = req.body;
+    if (!weight_kg || Number(weight_kg) <= 0 || isNaN(Number(weight_kg))) {
+      return res.status(400).json({ error: 'Poids invalide' });
+    }
     const logDate = date || new Date().toISOString().split('T')[0];
 
     const { data, error } = await supabaseAdmin

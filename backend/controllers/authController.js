@@ -237,7 +237,6 @@ async function onboarding(req, res) {
 
     const profileMode = mode === 'advanced' ? 'advanced' : 'guided';
 
-    console.log('[onboarding] userId:', userId, '| mode:', profileMode, '| body keys:', Object.keys(req.body));
 
     let daily_kcal_target;
     let advancedFields = {};
@@ -282,7 +281,6 @@ async function onboarding(req, res) {
       ...advancedFields,
     };
 
-    console.log('[onboarding] upsert data:', profileData);
 
     // UPSERT : crée la row si elle n'existe pas, met à jour sinon
     const { error } = await supabaseAdmin
@@ -294,7 +292,6 @@ async function onboarding(req, res) {
       return res.status(400).json({ error: error.message });
     }
 
-    console.log('[onboarding] Sauvegarde réussie pour', userId);
     res.json({ message: 'Profil enregistré', onboarding_done: true });
 
     // Fire-and-forget : ne bloque pas la réponse

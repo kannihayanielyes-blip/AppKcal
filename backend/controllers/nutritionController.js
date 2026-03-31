@@ -89,6 +89,9 @@ async function addLog(req, res) {
     if (!name || !kcal) {
       return res.status(400).json({ error: 'Nom et kcal requis' });
     }
+    if (Number(kcal) <= 0 || isNaN(Number(kcal))) {
+      return res.status(400).json({ error: 'kcal doit être un nombre positif' });
+    }
 
     const { data, error } = await supabaseAdmin
       .from('nutrition_logs')
