@@ -6,6 +6,9 @@
   <meta name="theme-color" content="#6B7C45">
   <title>Profil — AppKcal</title>
   <link rel="stylesheet" href="/css/main.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
     .profile-page { min-height:100dvh; padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom)); }
     .profile-hero { background:var(--olive); padding:32px 24px 40px; text-align:center; color:var(--white); }
@@ -56,6 +59,257 @@
     .profile-row__label { font-size:.85rem; color:var(--text-muted); }
     .profile-row__value { font-size:.95rem; font-weight:600; margin-top:1px; }
     .profile-row__arrow { color:var(--text-muted); }
+
+    /* ── Mes recettes ──────────────────────────────────────── */
+    .mr-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .mr-title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 17px;
+      font-weight: 600;
+      color: #111111;
+      margin: 0;
+    }
+    .mr-create-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #111111;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 7px 14px;
+      cursor: pointer;
+      letter-spacing: -.01em;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity .15s;
+    }
+    .mr-create-btn:active { opacity: .75; }
+
+    .mr-empty {
+      text-align: center;
+      padding: 32px 16px;
+      background: #fff;
+      border-radius: 14px;
+      border: 0.5px solid rgba(0,0,0,.07);
+    }
+    .mr-empty__icon { font-size: 2rem; margin-bottom: 8px; }
+    .mr-empty__text {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 14px;
+      color: #8E8E93;
+      margin: 0 0 14px;
+    }
+    .mr-empty__btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: #111111;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 18px;
+      cursor: pointer;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .mr-card {
+      background: #fff;
+      border: 0.5px solid rgba(0,0,0,.07);
+      border-radius: 14px;
+      padding: 14px 16px;
+      margin-bottom: 8px;
+      position: relative;
+      animation: mrCardIn .25s ease both;
+    }
+    @keyframes mrCardIn {
+      from { opacity:0; transform:translateY(6px); }
+      to   { opacity:1; transform:translateY(0); }
+    }
+    .mr-card__top {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+    .mr-card__emoji { font-size: 24px; line-height: 1; flex-shrink: 0; }
+    .mr-card__img { width: 40px; height: 40px; border-radius: 8px; object-fit: cover; flex-shrink: 0; }
+    .mr-card__thumb { width: 40px; height: 40px; border-radius: 8px; background: #f0f0f0; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 22px; }
+    .mr-card__nom {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      color: #111111;
+      line-height: 1.25;
+    }
+    .mr-card__meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 6px;
+    }
+    .mr-badge {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 11px;
+      font-weight: 600;
+      background: #F2F2F7;
+      color: #636366;
+      border-radius: 6px;
+      padding: 3px 8px;
+      text-transform: capitalize;
+    }
+    .mr-card__kcal {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 13px;
+      color: #8E8E93;
+    }
+    .mr-card__macros {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      color: #AEAEB2;
+      margin-bottom: 10px;
+      letter-spacing: -.01em;
+    }
+    .mr-card__footer {
+      display: flex;
+      justify-content: flex-end;
+    }
+    .mr-delete-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background: none;
+      border: none;
+      color: #EF4444;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      padding: 2px 0;
+      -webkit-tap-highlight-color: transparent;
+      opacity: .85;
+    }
+    .mr-delete-btn:active { opacity: .5; }
+
+    /* ── Bottom sheet ─────────────────────────────────────── */
+    .mr-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 1000;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .mr-sheet.is-open {
+      pointer-events: auto;
+      opacity: 1;
+    }
+    .mr-sheet__overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .mr-sheet.is-open .mr-sheet__overlay { opacity: 1; }
+
+    .mr-sheet__panel {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: #fff;
+      border-radius: 16px 16px 0 0;
+      padding: 0 16px calc(env(safe-area-inset-bottom) + 24px);
+      max-height: 92dvh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform .32s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .mr-sheet.is-open .mr-sheet__panel {
+      transform: translateY(0);
+    }
+    .mr-sheet__handle {
+      width: 36px;
+      height: 4px;
+      background: #E5E5EA;
+      border-radius: 2px;
+      margin: 10px auto 20px;
+    }
+    .mr-sheet__title {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 17px;
+      font-weight: 700;
+      color: #111111;
+      margin: 0 0 20px;
+      text-align: center;
+    }
+
+    /* Form elements */
+    .mr-field { margin-bottom: 14px; }
+    .mr-field label {
+      display: block;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-size: 12px;
+      font-weight: 600;
+      color: #8E8E93;
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 6px;
+    }
+    .mr-input, .mr-select, .mr-textarea {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      width: 100%;
+      background: #F5F5F7;
+      border: 1px solid transparent;
+      border-radius: 10px;
+      padding: 12px 14px;
+      font-size: 15px;
+      color: #111111;
+      outline: none;
+      box-sizing: border-box;
+      transition: border-color .15s;
+      -webkit-appearance: none;
+    }
+    .mr-input:focus, .mr-select:focus, .mr-textarea:focus {
+      border-color: #111111;
+      background: #fff;
+    }
+    .mr-textarea { resize: none; min-height: 80px; }
+    .mr-select { cursor: pointer; }
+    .mr-row { display: flex; gap: 10px; }
+    .mr-row .mr-field { flex: 1; }
+
+    .mr-submit-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      width: 100%;
+      background: #111111;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 15px;
+      font-weight: 700;
+      padding: 16px;
+      cursor: pointer;
+      margin-top: 8px;
+      letter-spacing: -.01em;
+      transition: opacity .15s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .mr-submit-btn:active { opacity: .75; }
+    .mr-cancel-btn {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      display: block;
+      width: 100%;
+      background: none;
+      border: none;
+      color: #8E8E93;
+      font-size: 14px;
+      padding: 14px;
+      cursor: pointer;
+      text-align: center;
+      -webkit-tap-highlight-color: transparent;
+    }
   </style>
 </head>
 <body>
@@ -89,6 +343,85 @@
     <div class="profile-stat">
       <div class="profile-stat__val" id="stat-weight">—</div>
       <div class="profile-stat__lbl">⚖️ Poids (kg)</div>
+    </div>
+  </div>
+
+  <!-- Mes recettes -->
+  <div class="profile-section" style="padding-bottom:8px">
+    <div class="mr-header">
+      <h3 class="mr-title">Mes recettes</h3>
+      <button class="mr-create-btn" id="mr-open-btn">+ Créer</button>
+    </div>
+    <div id="mr-list">
+      <div class="mr-empty">
+        <div class="mr-empty__icon">🍽️</div>
+        <p class="mr-empty__text">Aucune recette pour l'instant</p>
+        <button class="mr-empty__btn" id="mr-open-btn-empty">+ Créer ma première recette</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom sheet création recette -->
+  <div class="mr-sheet" id="mr-sheet" role="dialog" aria-modal="true" aria-label="Créer une recette">
+    <div class="mr-sheet__overlay" id="mr-overlay"></div>
+    <div class="mr-sheet__panel">
+      <div class="mr-sheet__handle"></div>
+      <h2 class="mr-sheet__title">Nouvelle recette</h2>
+
+      <form id="mr-form" novalidate>
+        <div class="mr-row">
+          <div class="mr-field" style="flex:3">
+            <label for="mr-nom">Nom de la recette *</label>
+            <input class="mr-input" type="text" id="mr-nom" placeholder="ex: Poulet riz brocolis" required>
+          </div>
+          <div class="mr-field" style="flex:1">
+            <label for="mr-emoji">Emoji</label>
+            <input class="mr-input" type="text" id="mr-emoji" placeholder="🍗" maxlength="2">
+          </div>
+        </div>
+
+        <div class="mr-field">
+          <label for="mr-categorie">Catégorie *</label>
+          <select class="mr-select" id="mr-categorie" required>
+            <option value="">Choisir…</option>
+            <option value="breakfast">🌅 Breakfast</option>
+            <option value="meal">🍽️ Repas</option>
+            <option value="snack">🥜 Snack</option>
+            <option value="dessert">🍫 Dessert</option>
+            <option value="shaker">🥛 Shaker</option>
+          </select>
+        </div>
+
+        <div class="mr-row">
+          <div class="mr-field">
+            <label for="mr-kcal">Calories *</label>
+            <input class="mr-input" type="number" id="mr-kcal" placeholder="500" min="0" inputmode="numeric" required>
+          </div>
+          <div class="mr-field">
+            <label for="mr-prot">Protéines g</label>
+            <input class="mr-input" type="number" id="mr-prot" placeholder="0" min="0" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="mr-row">
+          <div class="mr-field">
+            <label for="mr-gluc">Glucides g</label>
+            <input class="mr-input" type="number" id="mr-gluc" placeholder="0" min="0" inputmode="numeric">
+          </div>
+          <div class="mr-field">
+            <label for="mr-lip">Lipides g</label>
+            <input class="mr-input" type="number" id="mr-lip" placeholder="0" min="0" inputmode="numeric">
+          </div>
+        </div>
+
+        <div class="mr-field">
+          <label for="mr-ingredients">Ingrédients</label>
+          <textarea class="mr-textarea" id="mr-ingredients" placeholder="ex: 180g poulet, 80g riz, 200g brocolis…"></textarea>
+        </div>
+
+        <button type="submit" class="mr-submit-btn" id="mr-submit-btn">Enregistrer</button>
+        <button type="button" class="mr-cancel-btn" id="mr-cancel-btn">Annuler</button>
+      </form>
     </div>
   </div>
 
@@ -294,6 +627,147 @@ async function logout() {
   clearSession();
   window.location.href = '/pages/login.html';
 }
+
+/* ══════════════════════════════════════════
+   MES RECETTES
+══════════════════════════════════════════ */
+const CAT_LABELS = {
+  breakfast: 'Breakfast', meal: 'Repas',
+  snack: 'Snack', dessert: 'Dessert', shaker: 'Shaker'
+};
+
+// ── Sheet open / close ────────────────────
+function mrOpenSheet() {
+  const sheet = document.getElementById('mr-sheet');
+  sheet.classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('mr-nom').focus(), 350);
+}
+function mrCloseSheet() {
+  const sheet = document.getElementById('mr-sheet');
+  sheet.classList.remove('is-open');
+  document.body.style.overflow = '';
+  document.getElementById('mr-form').reset();
+}
+
+document.getElementById('mr-open-btn').addEventListener('click', mrOpenSheet);
+document.getElementById('mr-open-btn-empty')?.addEventListener('click', mrOpenSheet);
+document.getElementById('mr-cancel-btn').addEventListener('click', mrCloseSheet);
+document.getElementById('mr-overlay').addEventListener('click', mrCloseSheet);
+
+// ── Render list ───────────────────────────
+function mrRenderList(recipes) {
+  const list = document.getElementById('mr-list');
+
+  if (!recipes.length) {
+    list.innerHTML = `
+      <div class="mr-empty">
+        <div class="mr-empty__icon">🍽️</div>
+        <p class="mr-empty__text">Aucune recette pour l'instant</p>
+        <button class="mr-empty__btn" onclick="mrOpenSheet()">+ Créer ma première recette</button>
+      </div>`;
+    return;
+  }
+
+  list.innerHTML = recipes.map(r => {
+    const emoji = r.emoji || '🍽️';
+    const cat   = CAT_LABELS[r.categorie] || r.categorie;
+    const prot  = r.proteines_total ?? 0;
+    const gluc  = r.glucides_total  ?? 0;
+    const lip   = r.lipides_total   ?? 0;
+    const thumb = r.photo_url
+      ? `<img class="mr-card__img" src="${r.photo_url}" alt="${r.nom}" loading="lazy">`
+      : `<div class="mr-card__thumb">${emoji}</div>`;
+    return `
+      <div class="mr-card" data-id="${r.id}">
+        <div class="mr-card__top">
+          ${thumb}
+          <span class="mr-card__nom">${r.nom}</span>
+        </div>
+        <div class="mr-card__meta">
+          <span class="mr-badge">${cat}</span>
+          <span class="mr-card__kcal">${r.calories_total} kcal</span>
+        </div>
+        <div class="mr-card__macros">P ${prot}g · G ${gluc}g · L ${lip}g</div>
+        <div class="mr-card__footer">
+          <button class="mr-delete-btn" data-id="${r.id}">Supprimer</button>
+        </div>
+      </div>`;
+  }).join('');
+
+  // Attach delete handlers
+  list.querySelectorAll('.mr-delete-btn').forEach(btn => {
+    btn.addEventListener('click', () => mrDelete(btn.dataset.id));
+  });
+}
+
+// ── Load ──────────────────────────────────
+async function mrLoad() {
+  try {
+    const { recipes } = await API.nutrition.recipes.mine();
+    mrRenderList(recipes || []);
+  } catch (err) {
+    console.error('[mrLoad]', err);
+  }
+}
+
+// ── Create ────────────────────────────────
+document.getElementById('mr-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nom      = document.getElementById('mr-nom').value.trim();
+  const categorie = document.getElementById('mr-categorie').value;
+  const kcal     = document.getElementById('mr-kcal').value;
+
+  if (!nom)       { toast('Nom requis', 'error'); return; }
+  if (!categorie) { toast('Choisis une catégorie', 'error'); return; }
+  if (!kcal)      { toast('Calories requises', 'error'); return; }
+
+  const btn = document.getElementById('mr-submit-btn');
+  setLoading(btn, true);
+  try {
+    const recipe = await API.nutrition.recipes.create({
+      nom,
+      categorie,
+      calories_total:   Number(kcal),
+      proteines_total:  Number(document.getElementById('mr-prot').value) || 0,
+      glucides_total:   Number(document.getElementById('mr-gluc').value) || 0,
+      lipides_total:    Number(document.getElementById('mr-lip').value)  || 0,
+      emoji:       document.getElementById('mr-emoji').value.trim() || null,
+      ingredients: document.getElementById('mr-ingredients').value.trim() || null,
+    });
+    mrCloseSheet();
+    toast('Recette créée !', 'success');
+    // Prepend card without full reload
+    const { recipes: existing } = await API.nutrition.recipes.mine();
+    mrRenderList(existing || []);
+  } catch (err) {
+    const msg = err.message === 'Les comptes de test ne peuvent pas créer de recettes'
+      ? 'Fonctionnalité non disponible sur ce compte'
+      : err.message || 'Erreur création';
+    toast(msg, 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+});
+
+// ── Delete ────────────────────────────────
+async function mrDelete(id) {
+  if (!confirm('Supprimer cette recette ?')) return;
+  const card = document.querySelector(`.mr-card[data-id="${id}"]`);
+  if (card) { card.style.opacity = '.4'; card.style.pointerEvents = 'none'; }
+  try {
+    await API.nutrition.recipes.delete(id);
+    toast('Recette supprimée', 'success');
+    const { recipes } = await API.nutrition.recipes.mine();
+    mrRenderList(recipes || []);
+  } catch (err) {
+    toast(err.message || 'Erreur suppression', 'error');
+    if (card) { card.style.opacity = ''; card.style.pointerEvents = ''; }
+  }
+}
+
+// Charger les recettes dès que le profil est prêt
+document.addEventListener('DOMContentLoaded', () => { mrLoad(); });
 </script>
 </body>
 </html>

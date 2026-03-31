@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <meta name="theme-color" content="#6B7C45">
   <title>Onboarding — AppKcal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/auth.css">
 </head>
@@ -23,14 +26,37 @@
       <div class="onboarding-step-dot"></div>
       <div class="onboarding-step-dot"></div>
       <div class="onboarding-step-dot"></div>
+      <div class="onboarding-step-dot"></div>
+      <div class="onboarding-step-dot"></div>
+      <div class="onboarding-step-dot"></div>
     </div>
   </div>
 
   <!-- Steps -->
   <div class="onboarding-body">
 
+    <!-- Step 0: Mode choice -->
+    <div class="onboarding-step active" data-step="0">
+      <div>
+        <h2 class="onboarding-step-title">Comment tu veux configurer ton profil ?</h2>
+        <p class="onboarding-step-subtitle">Tu pourras modifier ça dans les réglages</p>
+      </div>
+      <div class="mode-grid">
+        <div class="mode-card selected" data-mode="guided">
+          <span class="mode-card__icon">🧭</span>
+          <div class="mode-card__title">Guidé</div>
+          <div class="mode-card__desc">On calcule tes besoins à partir de ton profil</div>
+        </div>
+        <div class="mode-card" data-mode="advanced">
+          <span class="mode-card__icon">⚙️</span>
+          <div class="mode-card__title">Avancé</div>
+          <div class="mode-card__desc">Tu saisis tes objectifs directement (kcal, macros…)</div>
+        </div>
+      </div>
+    </div>
+
     <!-- Step 1: Identité -->
-    <div class="onboarding-step active" data-step="1">
+    <div class="onboarding-step" data-step="1">
       <div>
         <h2 class="onboarding-step-title">Comment tu t'appelles ?</h2>
         <p class="onboarding-step-subtitle">On va personnaliser ton expérience</p>
@@ -110,6 +136,60 @@
             <div class="option-card__label">Rééquilibrage alimentaire</div>
             <div class="option-card__desc">Léger déficit de -100 kcal, manger mieux</div>
           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Step 4-adv: Objectifs avancés -->
+    <div class="onboarding-step" data-step="4-adv">
+      <div>
+        <h2 class="onboarding-step-title">Tes objectifs nutritionnels</h2>
+        <p class="onboarding-step-subtitle">Saisis tes cibles personnalisées</p>
+      </div>
+      <div class="adv-form">
+        <div class="adv-field">
+          <label for="adv-kcal-target">
+            Objectif calorique / jour
+            <span class="adv-required">REQUIS</span>
+          </label>
+          <input class="adv-input" type="number" id="adv-kcal-target" placeholder="2000" min="500" max="10000" inputmode="numeric">
+          <p class="adv-help">Combien de kcal tu vises par jour ?</p>
+        </div>
+        <div class="adv-separator">— Optionnel —</div>
+        <div class="adv-field">
+          <label for="adv-kcal-current">
+            Consommation actuelle / jour
+            <span class="adv-optional">optionnel</span>
+          </label>
+          <input class="adv-input" type="number" id="adv-kcal-current" placeholder="2400" min="500" max="10000" inputmode="numeric">
+        </div>
+        <div class="adv-field">
+          <label for="adv-weight-goal">
+            Poids objectif (kg)
+            <span class="adv-optional">optionnel</span>
+          </label>
+          <input class="adv-input" type="number" id="adv-weight-goal" placeholder="72" min="30" max="300" step="0.1" inputmode="decimal">
+        </div>
+        <div class="adv-field">
+          <label for="adv-protein">
+            Protéines cibles (g/jour)
+            <span class="adv-optional">optionnel</span>
+          </label>
+          <input class="adv-input" type="number" id="adv-protein" placeholder="150" min="0" max="500" inputmode="numeric">
+        </div>
+        <div class="adv-field">
+          <label for="adv-carbs">
+            Glucides cibles (g/jour)
+            <span class="adv-optional">optionnel</span>
+          </label>
+          <input class="adv-input" type="number" id="adv-carbs" placeholder="200" min="0" max="1000" inputmode="numeric">
+        </div>
+        <div class="adv-field">
+          <label for="adv-fat">
+            Lipides cibles (g/jour)
+            <span class="adv-optional">optionnel</span>
+          </label>
+          <input class="adv-input" type="number" id="adv-fat" placeholder="65" min="0" max="500" inputmode="numeric">
         </div>
       </div>
     </div>
@@ -196,6 +276,24 @@
       </div>
     </div>
 
+    <!-- Step 7: Aliments préférés -->
+    <div class="onboarding-step" data-step="7">
+      <div>
+        <h2 class="onboarding-step-title">Tes aliments préférés</h2>
+        <p class="onboarding-step-subtitle">On adapte tes recettes à ce que tu aimes</p>
+      </div>
+      <div class="food-chips-grid" id="liked-foods-grid"></div>
+    </div>
+
+    <!-- Step 8: Aliments à éviter -->
+    <div class="onboarding-step" data-step="8">
+      <div>
+        <h2 class="onboarding-step-title">Ce que tu n'aimes pas</h2>
+        <p class="onboarding-step-subtitle">On les exclut de tes suggestions</p>
+      </div>
+      <div class="food-chips-grid" id="disliked-foods-grid"></div>
+    </div>
+
   </div><!-- /onboarding-body -->
 
   <!-- Footer CTA -->
@@ -207,5 +305,223 @@
 <div id="toast-container"></div>
 <script src="/js/api.js"></script>
 <script src="/js/auth.js"></script>
+<script>
+// Override initOnboarding with mode-aware 9-step version
+window.initOnboarding = function() {
+  if (typeof requireAuth === 'function' && !requireAuth()) return;
+
+  const TOTAL_STEPS = 9;
+  let currentStep = 0;
+  let mode = 'guided';
+  const data = { mode: 'guided', liked_foods: [], disliked_foods: [] };
+
+  const stepSequenceGuided   = [0, 1, 2, 3, 4, 5, 6, 7, 8];
+  const stepSequenceAdvanced = [0, 1, 2, 3, '4-adv', 5, 6, 7, 8];
+
+  const FALLBACK_INGREDIENTS = ['Poulet', 'Riz', 'Œufs', 'Thon', 'Avocat', 'Banane', 'Fromage blanc', 'Avoine'];
+  let availableIngredients = [];
+  let ingredientsLoaded = false;
+
+  const dots    = document.querySelectorAll('.onboarding-step-dot');
+  const steps   = document.querySelectorAll('.onboarding-step');
+  const nextBtn = document.getElementById('next-btn');
+  const backBtn = document.getElementById('back-btn');
+
+  function getSeq() {
+    return mode === 'advanced' ? stepSequenceAdvanced : stepSequenceGuided;
+  }
+
+  function updateDots() {
+    const pos = getSeq().indexOf(currentStep);
+    dots.forEach((dot, i) => {
+      dot.classList.remove('done', 'current');
+      if (i < pos)        dot.classList.add('done');
+      else if (i === pos) dot.classList.add('current');
+    });
+  }
+
+  function refreshDislikedChips() {
+    document.querySelectorAll('#disliked-foods-grid .food-chip').forEach(chip => {
+      const isLiked = data.liked_foods.includes(chip.dataset.food);
+      if (isLiked) {
+        chip.classList.add('food-chip--disabled');
+        chip.classList.remove('food-chip--selected');
+        const idx = data.disliked_foods.indexOf(chip.dataset.food);
+        if (idx !== -1) data.disliked_foods.splice(idx, 1);
+      } else {
+        chip.classList.remove('food-chip--disabled');
+      }
+    });
+  }
+
+  function renderLikedGrid() {
+    const grid = document.getElementById('liked-foods-grid');
+    grid.innerHTML = '';
+    for (const name of availableIngredients) {
+      const chip = document.createElement('div');
+      chip.className = 'food-chip';
+      chip.dataset.food = name;
+      chip.textContent = name;
+      if (data.liked_foods.includes(name)) chip.classList.add('food-chip--selected');
+      chip.addEventListener('click', () => {
+        chip.classList.toggle('food-chip--selected');
+        const idx = data.liked_foods.indexOf(name);
+        if (idx === -1) data.liked_foods.push(name); else data.liked_foods.splice(idx, 1);
+      });
+      grid.appendChild(chip);
+    }
+  }
+
+  function renderDislikedGrid() {
+    const grid = document.getElementById('disliked-foods-grid');
+    grid.innerHTML = '';
+    for (const name of availableIngredients) {
+      const chip = document.createElement('div');
+      chip.className = 'food-chip';
+      chip.dataset.food = name;
+      chip.textContent = name;
+      if (data.disliked_foods.includes(name)) chip.classList.add('food-chip--selected');
+      chip.addEventListener('click', () => {
+        if (chip.classList.contains('food-chip--disabled')) return;
+        chip.classList.toggle('food-chip--selected');
+        const idx = data.disliked_foods.indexOf(name);
+        if (idx === -1) data.disliked_foods.push(name); else data.disliked_foods.splice(idx, 1);
+      });
+      grid.appendChild(chip);
+    }
+    refreshDislikedChips();
+  }
+
+  async function loadIngredients() {
+    if (ingredientsLoaded) return;
+    const grid = document.getElementById('liked-foods-grid');
+    grid.innerHTML = '<div class="chips-loader"><span></span><span></span><span></span></div>';
+    nextBtn.disabled = true;
+    try {
+      const res = await request('GET', '/nutrition/ingredients');
+      const list = Array.isArray(res) ? res : (res?.ingredients || []);
+      availableIngredients = list.length > 0 ? list : FALLBACK_INGREDIENTS;
+    } catch (_) {
+      availableIngredients = FALLBACK_INGREDIENTS;
+    }
+    ingredientsLoaded = true;
+    nextBtn.disabled = false;
+    renderLikedGrid();
+  }
+
+  function showStep(stepId) {
+    steps.forEach(s => s.classList.remove('active'));
+    const el = document.querySelector(`.onboarding-step[data-step="${stepId}"]`);
+    if (el) el.classList.add('active');
+
+    if (stepId === 7) loadIngredients();
+    if (stepId === 8) renderDislikedGrid();
+
+    const pos = getSeq().indexOf(stepId);
+    backBtn.style.display = pos === 0 ? 'none' : 'flex';
+    nextBtn.textContent = pos === TOTAL_STEPS - 1 ? 'Terminer 🎉' : 'Continuer';
+    updateDots();
+  }
+
+  // Mode cards (step 0)
+  document.querySelectorAll('.mode-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.mode-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      mode = card.dataset.mode;
+      data.mode = mode;
+    });
+  });
+
+  // Option cards
+  document.querySelectorAll('.option-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const group = card.dataset.group;
+      document.querySelectorAll(`.option-card[data-group="${group}"]`).forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      data[group] = card.dataset.value;
+    });
+  });
+
+  // Gender buttons
+  document.querySelectorAll('.gender-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.gender-btn').forEach(b => b.classList.remove('selected'));
+      btn.classList.add('selected');
+      data.gender = btn.dataset.value;
+    });
+  });
+
+  // Tag chips
+  document.querySelectorAll('.tag-chip').forEach(chip => {
+    chip.addEventListener('click', () => {
+      chip.classList.toggle('selected');
+      const group = chip.dataset.group;
+      if (!data[group]) data[group] = [];
+      const val = chip.dataset.value;
+      const idx = data[group].indexOf(val);
+      if (idx === -1) data[group].push(val); else data[group].splice(idx, 1);
+    });
+  });
+
+  backBtn?.addEventListener('click', () => {
+    const seq = getSeq();
+    const pos = seq.indexOf(currentStep);
+    if (pos > 0) { currentStep = seq[pos - 1]; showStep(currentStep); }
+  });
+
+  nextBtn?.addEventListener('click', async () => {
+    if (currentStep === 1) {
+      data.username = document.getElementById('ob-username')?.value.trim();
+      if (!data.username) { toast('Entre ton prénom', 'error'); return; }
+    }
+    if (currentStep === 2) {
+      data.birthdate = document.getElementById('ob-birthdate')?.value;
+      if (!data.birthdate) { toast('Entre ta date de naissance', 'error'); return; }
+      if (!data.gender)    { toast('Sélectionne ton genre', 'error'); return; }
+    }
+    if (currentStep === 3) {
+      data.height_cm = document.getElementById('ob-height')?.value;
+      data.weight_kg = document.getElementById('ob-weight')?.value;
+      if (!data.height_cm || !data.weight_kg) { toast('Entre ta taille et ton poids', 'error'); return; }
+    }
+    if (currentStep === 4 && !data.goal) { toast('Choisis ton objectif', 'error'); return; }
+    if (currentStep === '4-adv') {
+      data.daily_kcal_target = document.getElementById('adv-kcal-target')?.value;
+      if (!data.daily_kcal_target) { toast('L\'objectif calorique est requis', 'error'); return; }
+      data.kcal_current     = document.getElementById('adv-kcal-current')?.value || null;
+      data.weight_goal_kg   = document.getElementById('adv-weight-goal')?.value  || null;
+      data.protein_target_g = document.getElementById('adv-protein')?.value      || null;
+      data.carbs_target_g   = document.getElementById('adv-carbs')?.value        || null;
+      data.fat_target_g     = document.getElementById('adv-fat')?.value          || null;
+    }
+    if (currentStep === 5 && !data.activity_level) { toast('Choisis ton niveau d\'activité', 'error'); return; }
+
+    const seq = getSeq();
+    const pos = seq.indexOf(currentStep);
+
+    // Last step: submit
+    if (pos === TOTAL_STEPS - 1) {
+      setLoading(nextBtn, true);
+      try {
+        await API.auth.onboarding(data);
+        const user = getUser();
+        if (user) { user.onboarding_done = true; user.username = data.username; setUser(user); }
+        toast('Profil créé !', 'success');
+        window.location.href = '/pages/dashboard.html';
+      } catch (err) {
+        toast(err.message, 'error');
+        setLoading(nextBtn, false);
+      }
+      return;
+    }
+
+    currentStep = seq[pos + 1];
+    showStep(currentStep);
+  });
+
+  showStep(0);
+};
+</script>
 </body>
 </html>

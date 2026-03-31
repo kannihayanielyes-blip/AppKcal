@@ -1,4 +1,5 @@
 const { supabaseAdmin } = require('../../config/supabase');
+const OpenAI = require('openai');
 
 const HARDCODED_IDS = [
   '00000000-0000-0000-0000-000000000001', // admin
@@ -79,6 +80,10 @@ async function getWeek(req, res) {
 // POST /api/nutrition/log
 async function addLog(req, res) {
   try {
+    if (HARDCODED_IDS.includes(req.user.id)) {
+      return res.status(201).json({ id: '00000000-0000-0000-0000-' + String(Date.now()).padStart(12, '0'), ...req.body, user_id: req.user.id });
+    }
+
     const { name, kcal, protein_g, carbs_g, fat_g, meal_type, date, quantity_g, photo_url } = req.body;
 
     if (!name || !kcal) {
@@ -113,6 +118,10 @@ async function addLog(req, res) {
 // DELETE /api/nutrition/log/:id
 async function deleteLog(req, res) {
   try {
+    if (HARDCODED_IDS.includes(req.user.id)) {
+      return res.status(200).json({ success: true });
+    }
+
     const { id } = req.params;
 
     const { error } = await supabaseAdmin
@@ -131,6 +140,10 @@ async function deleteLog(req, res) {
 // PUT /api/nutrition/log/:id
 async function updateLog(req, res) {
   try {
+    if (HARDCODED_IDS.includes(req.user.id)) {
+      return res.status(200).json({ id: req.params.id, ...req.body, user_id: req.user.id });
+    }
+
     const { id } = req.params;
     const { name, kcal, protein_g, carbs_g, fat_g, meal_type, quantity_g } = req.body;
 
@@ -198,24 +211,146 @@ function addDays(dateStr, n) {
 async function getRecipes(req, res) {
   try {
     const { category } = req.query;
-    console.log('[getRecipes] category:', category, '| user:', req.user?.id);
-
-    let query = supabaseAdmin
+    const userId = req.user?.id;
+    // Recettes admin (user_id IS NULL et is_visible = true)
+    let adminQuery = supabaseAdmin
       .from('recettes')
       .select('*')
-      .order('nom', { ascending: true });
+      .is('user_id', null)
+      .eq('is_visible', true);
 
     if (category && category !== 'all') {
-      query = query.eq('categorie', category);
+      adminQuery = adminQuery.eq('categorie', category);
     }
-    query = query.eq('is_visible', true);
 
-    const { data, error } = await query;
-    console.log('[getRecipes] rows:', data?.length ?? 'null', '| error:', error?.message ?? 'none');
-    if (error) return res.status(400).json({ error: error.message });
-    res.json(data || []);
+    // Recettes de l'utilisateur connecté
+    let userQuery = supabaseAdmin
+      .from('recettes')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (category && category !== 'all') {
+      userQuery = userQuery.eq('categorie', category);
+    }
+
+    const [{ data: adminData, error: adminError }, { data: userData, error: userError }] =
+      await Promise.all([adminQuery, userQuery]);
+
+    if (adminError) return res.status(400).json({ error: adminError.message });
+    if (userError)  return res.status(400).json({ error: userError.message });
+
+    const combined = [...(adminData || []), ...(userData || [])]
+      .sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+
+    res.json(combined);
   } catch (err) {
     console.error('[getRecipes]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+// GET /api/nutrition/recipes/mine
+async function getUserRecipes(req, res) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('recettes')
+      .select('*')
+      .eq('user_id', req.user.id)
+      .order('created_at', { ascending: false });
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ recipes: data || [] });
+  } catch (err) {
+    console.error('[getUserRecipes]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+// POST /api/nutrition/recipes
+async function createUserRecipe(req, res) {
+  try {
+    if (!req.user?.id) {
+      return res.status(401).json({ error: 'Utilisateur non authentifié' });
+    }
+
+    // Vérifie que l'user existe dans profiles (les comptes hardcodés n'ont pas de profil réel)
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('id')
+      .eq('id', req.user.id)
+      .maybeSingle();
+
+    if (!profile) {
+      return res.status(403).json({ error: 'Les comptes de test ne peuvent pas créer de recettes' });
+    }
+
+    const {
+      nom, description, categorie, calories_total,
+      proteines_total, glucides_total, lipides_total,
+      temps_preparation, ingredients, emoji
+    } = req.body;
+
+    if (!nom || !categorie || calories_total === undefined) {
+      return res.status(400).json({ error: 'nom, categorie et calories_total sont requis' });
+    }
+
+    const VALID_CATEGORIES = ['breakfast', 'meal', 'snack', 'dessert', 'shaker'];
+    if (!VALID_CATEGORIES.includes(categorie)) {
+      return res.status(400).json({ error: 'categorie invalide' });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('recettes')
+      .insert({
+        user_id:           req.user.id,
+        nom,
+        description:       description || null,
+        categorie,
+        calories_total:    Number(calories_total),
+        proteines_total:   Number(proteines_total) || 0,
+        glucides_total:    Number(glucides_total)  || 0,
+        lipides_total:     Number(lipides_total)   || 0,
+        temps_preparation: temps_preparation ? Number(temps_preparation) : null,
+        ingredients:       ingredients || null,
+        emoji:             emoji || null,
+        is_visible:        false, // recette perso, non visible dans le feed admin
+      })
+      .select()
+      .single();
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(201).json(data);
+  } catch (err) {
+    console.error('[createUserRecipe]', err);
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+// DELETE /api/nutrition/recipes/:id
+async function deleteUserRecipe(req, res) {
+  try {
+    const { id } = req.params;
+
+    // Vérifie ownership avant suppression
+    const { data: existing, error: fetchError } = await supabaseAdmin
+      .from('recettes')
+      .select('id, user_id')
+      .eq('id', id)
+      .single();
+
+    if (fetchError || !existing) return res.status(404).json({ error: 'Recette introuvable' });
+    if (existing.user_id !== req.user.id) return res.status(403).json({ error: 'Accès refusé' });
+
+    const { error } = await supabaseAdmin
+      .from('recettes')
+      .delete()
+      .eq('id', id)
+      .eq('user_id', req.user.id); // double sécurité
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ success: true });
+  } catch (err) {
+    console.error('[deleteUserRecipe]', err);
     res.status(500).json({ error: 'Erreur serveur' });
   }
 }
@@ -296,4 +431,174 @@ async function getSmartSuggestions(req, res) {
   }
 }
 
-module.exports = { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getSmartSuggestions };
+async function searchAliment(req, res) {
+  const q = (req.query.q || '').trim();
+  if (!q || q.length < 2) return res.json([]);
+
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('aliments_bruts')
+      .select('id, nom, kcal_100g, proteines_100g, glucides_100g, lipides_100g')
+      .ilike('nom', `%${q}%`)
+      .not('nom', 'ilike', '%babyfood%')
+      .not('nom', 'ilike', '%APPLEBEE%')
+      .not('nom', 'ilike', '%bologna%')
+      .not('nom', 'ilike', '%alcoholic%')
+      .not('nom', 'ilike', '%beverage%')
+      .not('nom', 'ilike', '%restaurant%')
+      .order('nom', { ascending: true })
+      .limit(10);
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    console.error('[searchAliment]', err.message);
+    res.status(500).json({ error: 'Erreur recherche aliment' });
+  }
+}
+
+// ── Génération de recettes personnalisées via GPT-4o ─────────────
+async function generatePersonalizedRecipes(userId, profile) {
+  try {
+    // Guard : évite une double génération si l'onboarding est soumis deux fois
+    const { count } = await supabaseAdmin
+      .from('recettes')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', userId);
+    if (count > 0) {
+      console.log(`[generatePersonalizedRecipes] recettes déjà existantes pour user ${userId}, skip`);
+      return;
+    }
+
+    const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+    const kcal        = profile.daily_kcal_target || 2000;
+    const goal        = profile.goal              || 'maintain';
+    const allergies   = profile.allergies?.join(', ')    || 'aucune';
+    const likedFoods  = profile.liked_foods?.join(', ')  || 'aucun';
+    const dislikedFoods = profile.disliked_foods?.join(', ') || 'aucun';
+
+    const systemPrompt = 'Tu es un nutritionniste expert. Tu réponds UNIQUEMENT en JSON valide, sans markdown, sans backticks, sans texte autour.';
+
+    const userPrompt = `8 recettes pour: objectif=${goal}, ${kcal}kcal/j, allergies=${allergies}, aime=${likedFoods}, évite=${dislikedFoods}.
+Répartition: 2 breakfast(~${Math.round(kcal*0.25)}kcal), 2 meal-déj(~${Math.round(kcal*0.35)}kcal), 2 meal-dîner(~${Math.round(kcal*0.30)}kcal), 2 snack(~${Math.round(kcal*0.10)}kcal).
+Macros cohérentes (p×4+g×4+l×9=kcal). Noms courts. Ingrédients concis (max 5).
+JSON uniquement: {"recettes":[{"nom":"","description":"","categorie":"breakfast|meal|snack","calories_total":0,"proteines_total":0,"glucides_total":0,"lipides_total":0,"temps_preparation":0,"emoji":"","ingredients":[{"nom":"","quantite":""}]}]}`;
+
+    const response = await openai.chat.completions.create({
+      model:       'gpt-4o',
+      temperature: 0.7,
+      max_tokens:  1500,
+      messages: [
+        { role: 'system', content: systemPrompt },
+        { role: 'user',   content: userPrompt   }
+      ]
+    });
+
+    const rawText = response.choices[0].message.content;
+
+    // Strip éventuels backticks/markdown
+    const cleanText = rawText.replace(/```json|```/g, '').trim();
+
+    let parsed;
+    try {
+      parsed = JSON.parse(cleanText);
+    } catch (parseErr) {
+      console.error('[generatePersonalizedRecipes] JSON.parse failed:', parseErr.message);
+      console.error('[generatePersonalizedRecipes] raw response:', rawText.slice(0, 200));
+      return;
+    }
+
+    const recettes = parsed?.recettes;
+    if (!Array.isArray(recettes) || recettes.length === 0) {
+      console.error('[generatePersonalizedRecipes] tableau recettes vide ou absent');
+      return;
+    }
+    if (recettes.length !== 8) {
+      console.warn(`[generatePersonalizedRecipes] attendu 8 recettes, reçu ${recettes.length} — on continue`);
+    }
+
+    // Insert batch dans Supabase
+    const rows = recettes.map(r => ({
+      user_id:           userId,
+      nom:               r.nom,
+      description:       r.description       || null,
+      categorie:         r.categorie,
+      calories_total:    Number(r.calories_total)  || 0,
+      proteines_total:   Number(r.proteines_total) || 0,
+      glucides_total:    Number(r.glucides_total)  || 0,
+      lipides_total:     Number(r.lipides_total)   || 0,
+      temps_preparation: r.temps_preparation ? Number(r.temps_preparation) : null,
+      emoji:             r.emoji             || null,
+      ingredients:       Array.isArray(r.ingredients) ? r.ingredients : null,
+      is_visible:        true,
+    }));
+
+    const { error: insertError } = await supabaseAdmin.from('recettes').insert(rows);
+    if (insertError) {
+      console.error('[generatePersonalizedRecipes] insert error:', insertError.message);
+    }
+  } catch (err) {
+    console.error('[generatePersonalizedRecipes]', err.message);
+  }
+}
+
+// GET /api/nutrition/ingredients (public)
+async function getIngredients(req, res) {
+  try {
+    const { data, error } = await supabaseAdmin
+      .from('recettes')
+      .select('ingredients')
+      .eq('is_visible', true);
+
+    if (error) return res.status(500).json({ error: 'Erreur serveur' });
+
+    const allNoms = [];
+    for (const recette of (data || [])) {
+      try {
+        const ingredients = recette.ingredients;
+        if (!Array.isArray(ingredients)) continue;
+        for (const ing of ingredients) {
+          if (ing?.nom && typeof ing.nom === 'string') allNoms.push(ing.nom);
+        }
+      } catch (_) { /* recette malformée, on passe */ }
+    }
+
+    const ingredients = [...new Set(allNoms)].sort((a, b) => a.localeCompare(b, 'fr'));
+    res.json({ ingredients });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+// POST /api/nutrition/recipes/:id/photo
+async function uploadRecipePhoto(req, res) {
+  try {
+    if (!req.file) return res.status(400).json({ error: 'Photo requise' });
+
+    const { id } = req.params;
+    const storagePath = `${id}/${Date.now()}.jpg`;
+
+    const { error: uploadError } = await supabaseAdmin.storage
+      .from('recipes')
+      .upload(storagePath, req.file.buffer, { contentType: req.file.mimetype, upsert: true });
+
+    if (uploadError) return res.status(400).json({ error: uploadError.message });
+
+    const { data: urlData } = supabaseAdmin.storage.from('recipes').getPublicUrl(storagePath);
+    const photo_url = urlData.publicUrl;
+
+    const { error: updateError } = await supabaseAdmin
+      .from('recettes')
+      .update({ photo_url })
+      .eq('id', id);
+
+    if (updateError) return res.status(400).json({ error: updateError.message });
+
+    res.json({ photo_url });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+module.exports = { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, generatePersonalizedRecipes, getIngredients, uploadRecipePhoto };

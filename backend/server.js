@@ -57,7 +57,7 @@ app.use('/api/sport', sportRoutes);
 
 // ── Health check ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
-  res.json({ status: 'ok', env: process.env.NODE_ENV, ts: new Date().toISOString() });
+  res.json({ status: 'ok' });
 });
 
 // ── SPA fallback ──────────────────────────────────────────────
@@ -78,6 +78,11 @@ app.use((err, req, res, next) => {
       : err.message
   });
 });
+
+if (!process.env.JWT_SECRET || process.env.JWT_SECRET.length < 32) {
+  console.error('FATAL: JWT_SECRET manquant ou trop court (min 32 chars)');
+  process.exit(1);
+}
 
 app.listen(PORT, () => {
   console.log(`AppKcal API running on http://localhost:${PORT}`);

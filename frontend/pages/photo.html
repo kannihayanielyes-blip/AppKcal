@@ -13,8 +13,35 @@
       flex-direction: column;
       padding-bottom: calc(var(--nav-h) + env(safe-area-inset-bottom));
     }
-    .photo-header { padding: 20px 20px 0; }
-    .photo-header h1 { font-size: 1.4rem; margin-bottom: 4px; }
+    .photo-header {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      height: 56px;
+      background: rgba(255, 255, 255, 0.95);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      border-bottom: 0.5px solid rgba(0, 0, 0, 0.07);
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      padding: 0 16px;
+      flex-shrink: 0;
+    }
+    .photo-header__back {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 20px;
+      color: #111111;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
 
     /* ── Drop zone ── */
     .photo-area {
@@ -268,6 +295,129 @@
       to   { transform: translateY(0); }
     }
 
+    /* ── Section header (title + create btn) ── */
+    .recipes-section__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 14px;
+    }
+    .recipes-section__header .recipes-section__title { margin-bottom: 0; }
+
+    .rc-create-btn {
+      background: #111111;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 6px 12px;
+      cursor: pointer;
+      letter-spacing: -.01em;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity .15s;
+    }
+    .rc-create-btn:active { opacity: .7; }
+
+    /* ── Source filter pills ── */
+    .source-pills {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .source-pill {
+      padding: 5px 13px;
+      border-radius: 99px;
+      border: 1.5px solid #E5E5EA;
+      background: #F9F9F9;
+      font-size: .76rem;
+      font-weight: 600;
+      color: #636366;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all .15s;
+      flex-shrink: 0;
+    }
+    .source-pill.active {
+      border-color: #111111;
+      background: #111111;
+      color: #fff;
+    }
+
+    /* ── Create recipe bottom sheet ── */
+    .cr-sheet {
+      position: fixed;
+      inset: 0;
+      z-index: 400;
+      pointer-events: none;
+      opacity: 0;
+    }
+    .cr-sheet.is-open { pointer-events: auto; opacity: 1; }
+    .cr-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,.45);
+      opacity: 0;
+      transition: opacity .25s ease;
+    }
+    .cr-sheet.is-open .cr-overlay { opacity: 1; }
+    .cr-panel {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      background: #fff;
+      border-radius: 16px 16px 0 0;
+      padding: 0 16px calc(env(safe-area-inset-bottom) + 24px);
+      max-height: 92dvh;
+      overflow-y: auto;
+      transform: translateY(100%);
+      transition: transform .32s cubic-bezier(0.32, 0.72, 0, 1);
+    }
+    .cr-sheet.is-open .cr-panel { transform: translateY(0); }
+    .cr-handle {
+      width: 36px; height: 4px;
+      background: #E5E5EA;
+      border-radius: 2px;
+      margin: 10px auto 20px;
+    }
+    .cr-title {
+      font-size: 17px; font-weight: 700; color: #111111;
+      margin: 0 0 20px; text-align: center;
+    }
+    .cr-field { margin-bottom: 14px; }
+    .cr-field label {
+      display: block; font-size: 12px; font-weight: 600;
+      color: #8E8E93; text-transform: uppercase;
+      letter-spacing: .05em; margin-bottom: 6px;
+    }
+    .cr-input, .cr-select, .cr-textarea {
+      width: 100%; background: #F5F5F7;
+      border: 1px solid transparent; border-radius: 10px;
+      padding: 12px 14px; font-size: 15px; color: #111111;
+      outline: none; box-sizing: border-box;
+      transition: border-color .15s;
+      -webkit-appearance: none; font-family: inherit;
+    }
+    .cr-input:focus, .cr-select:focus, .cr-textarea:focus {
+      border-color: #111111; background: #fff;
+    }
+    .cr-textarea { resize: none; min-height: 76px; }
+    .cr-row { display: flex; gap: 10px; }
+    .cr-row .cr-field { flex: 1; }
+    .cr-submit {
+      width: 100%; background: #111111; color: #fff;
+      border: none; border-radius: 8px; font-size: 15px;
+      font-weight: 700; padding: 16px; cursor: pointer;
+      margin-top: 8px; font-family: inherit;
+      transition: opacity .15s; -webkit-tap-highlight-color: transparent;
+    }
+    .cr-submit:active { opacity: .75; }
+    .cr-cancel {
+      display: block; width: 100%; background: none;
+      border: none; color: #8E8E93; font-size: 14px;
+      padding: 14px; cursor: pointer; text-align: center; font-family: inherit;
+    }
+
     /* ── Context panel (step 1) ── */
     .context-panel {
       margin: 12px 20px 0;
@@ -410,6 +560,22 @@
       color: var(--text-muted);
       margin-left: auto;
     }
+    .aliment-source-badge {
+      display: inline-block;
+      font-size: .68rem;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 20px;
+      margin-top: 6px;
+    }
+    .badge-bdd {
+      background: #d1fae5;
+      color: #065f46;
+    }
+    .badge-ia {
+      background: #ffedd5;
+      color: #92400e;
+    }
 
     /* Manual add form */
     .add-aliment-form {
@@ -450,12 +616,8 @@
 <body>
 
 <div class="photo-page">
-  <div class="photo-header" style="display:flex;align-items:flex-start;gap:12px">
-    <button onclick="history.length>1?history.back():location.href='/pages/dashboard.html'" style="margin-top:4px;font-size:1.3rem;color:var(--text-muted);background:none;border:none;cursor:pointer;flex-shrink:0">←</button>
-    <div>
-      <h1>📸 Photo IA</h1>
-      <p class="text-muted text-sm">Prends une photo de ton repas et laisse l'IA estimer les calories</p>
-    </div>
+  <div class="photo-header">
+    <button class="photo-header__back" onclick="history.length>1?history.back():location.href='/pages/dashboard.html'" aria-label="Retour">←</button>
   </div>
 
   <!-- Drop zone -->
@@ -535,7 +697,10 @@
 
   <!-- ── Idées de repas ── -->
   <section class="recipes-section">
-    <div class="recipes-section__title">🍽️ Idées de repas</div>
+    <div class="recipes-section__header">
+      <div class="recipes-section__title">🍽️ Idées de repas</div>
+      <button class="rc-create-btn" id="rc-open-btn">+ Créer</button>
+    </div>
 
     <!-- Filtres catégories -->
     <div class="category-pills" id="category-pills">
@@ -547,6 +712,13 @@
       <div class="category-pill" data-cat="shaker">Shaker</div>
     </div>
 
+    <!-- Filtres source -->
+    <div class="source-pills" id="source-pills">
+      <div class="source-pill active" data-source="all">Toutes</div>
+      <div class="source-pill" data-source="base">De base</div>
+      <div class="source-pill" data-source="perso">Mes recettes</div>
+    </div>
+
     <!-- Liste recettes -->
     <div class="recipes-grid" id="recipes-grid">
       <div class="recipes-empty">
@@ -555,6 +727,69 @@
       </div>
     </div>
   </section>
+</div>
+
+<!-- ── Create recipe sheet ── -->
+<div class="cr-sheet" id="cr-sheet" role="dialog" aria-modal="true" aria-label="Créer une recette">
+  <div class="cr-overlay" id="cr-overlay"></div>
+  <div class="cr-panel">
+    <div class="cr-handle"></div>
+    <h2 class="cr-title">Nouvelle recette</h2>
+    <form id="cr-form" novalidate>
+      <div class="cr-row">
+        <div class="cr-field" style="flex:3">
+          <label for="cr-nom">Nom *</label>
+          <input class="cr-input" type="text" id="cr-nom" placeholder="ex: Poulet riz brocolis" required>
+        </div>
+        <div class="cr-field" style="flex:1">
+          <label for="cr-emoji">Emoji</label>
+          <input class="cr-input" type="text" id="cr-emoji" placeholder="🍗" maxlength="2">
+        </div>
+      </div>
+      <div class="cr-field">
+        <label for="cr-categorie">Catégorie *</label>
+        <select class="cr-select" id="cr-categorie" required>
+          <option value="">Choisir…</option>
+          <option value="breakfast">🌅 Breakfast</option>
+          <option value="meal">🍽️ Repas</option>
+          <option value="snack">🥜 Snack</option>
+          <option value="dessert">🍫 Dessert</option>
+          <option value="shaker">🥛 Shaker</option>
+        </select>
+      </div>
+      <div class="cr-row">
+        <div class="cr-field">
+          <label for="cr-kcal">Calories *</label>
+          <input class="cr-input" type="number" id="cr-kcal" placeholder="500" min="0" inputmode="numeric" required>
+        </div>
+        <div class="cr-field">
+          <label for="cr-prot">Protéines g</label>
+          <input class="cr-input" type="number" id="cr-prot" placeholder="0" min="0" inputmode="numeric">
+        </div>
+      </div>
+      <div class="cr-row">
+        <div class="cr-field">
+          <label for="cr-gluc">Glucides g</label>
+          <input class="cr-input" type="number" id="cr-gluc" placeholder="0" min="0" inputmode="numeric">
+        </div>
+        <div class="cr-field">
+          <label for="cr-lip">Lipides g</label>
+          <input class="cr-input" type="number" id="cr-lip" placeholder="0" min="0" inputmode="numeric">
+        </div>
+      </div>
+      <div class="cr-field">
+        <label for="cr-ingredients">Ingrédients</label>
+        <textarea class="cr-textarea" id="cr-ingredients" placeholder="ex: 180g poulet, 80g riz, 200g brocolis…"></textarea>
+      </div>
+      <div class="cr-field">
+        <label for="cr-photo">Photo de la recette (optionnelle)</label>
+        <input class="cr-input" type="file" id="cr-photo" accept="image/*" style="padding:6px;">
+        <img id="cr-photo-preview" src="" alt="" style="display:none;width:100%;max-height:200px;object-fit:cover;border-radius:8px;margin-top:8px;">
+      </div>
+      <button type="submit" class="cr-submit" id="cr-submit-btn">Enregistrer</button>
+      <button type="button" class="cr-cancel" id="cr-cancel-btn">Annuler</button>
+    </form>
+  </div>
 </div>
 
 <!-- ── Recipe modal ── -->
@@ -706,7 +941,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const carbs = a.glucides_g || 0;
         const fat   = a.lipides_g  || 0;
 
-        console.log(`[Photo IA] "${a.nom}" q=${q}g kcal=${kcal} prot=${prot} carbs=${carbs} fat=${fat}`);
+        console.log(`[Photo IA] "${a.nom}" q=${q}g kcal=${kcal} prot=${prot} carbs=${carbs} fat=${fat} source=${a.source}`);
         return {
           nom:        a.nom,
           quantite_g: q,
@@ -714,6 +949,7 @@ document.addEventListener('DOMContentLoaded', () => {
           prot_per_g:  prot  / q,
           carbs_per_g: carbs / q,
           fat_per_g:   fat   / q,
+          source:     a.source || 'estimation_ia',
         };
       });
       renderAliments();
@@ -754,6 +990,9 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="aliment-kcal-display" id="kcal-${i}">${c.kcal} kcal</div>
             <div class="aliment-macros-display" id="macros-${i}">P${c.prot} · G${c.carbs} · L${c.fat}</div>
           </div>
+          <span class="aliment-source-badge ${item.source === 'bdd' ? 'badge-bdd' : 'badge-ia'}">
+            ${item.source === 'bdd' ? '✓ BDD officielle' : '~ Estimation IA'}
+          </span>
         </div>`;
     }).join('');
 
@@ -873,23 +1112,47 @@ document.addEventListener('DOMContentLoaded', () => {
   // ── Recettes ─────────────────────────────────────────────────
   let allRecipes = [];
   let activeCategory = 'all';
+  let activeSource    = 'all';
   let openRecipe = null;
 
-  async function loadRecipes(cat) {
+  // Charge admin + perso en parallèle, tague chaque recette par _source
+  async function loadRecipes() {
     try {
-      const data = await API.nutrition.recipes(cat);
-      allRecipes = data || [];
-      renderRecipes(allRecipes);
+      const [allData, mineRes] = await Promise.all([
+        API.nutrition.recipes('all'),
+        API.nutrition.recipes.mine().catch(() => ({ recipes: [] }))
+      ]);
+      const mineIds = new Set(((mineRes && mineRes.recipes) || []).map(r => r.id));
+      allRecipes = (allData || []).map(r => ({
+        ...r,
+        _source: mineIds.has(r.id) ? 'perso' : 'base'
+      }));
+      applyFilters();
     } catch (err) {
       console.error('[loadRecipes] erreur:', err.message, err);
-      renderRecipesEmpty('Impossible de charger les recettes. (' + err.message + ')');
+      renderRecipesEmpty('Impossible de charger les recettes.');
+    }
+  }
+
+  function applyFilters() {
+    let filtered = allRecipes;
+    if (activeCategory !== 'all') {
+      filtered = filtered.filter(r => r.categorie === activeCategory);
+    }
+    if (activeSource !== 'all') {
+      filtered = filtered.filter(r => r._source === activeSource);
+    }
+    if (!filtered.length && activeSource === 'perso') {
+      renderRecipesEmpty('Aucune recette perso — crée la tienne !', true);
+    } else {
+      renderRecipes(filtered);
     }
   }
 
   function renderRecipes(list) {
     const grid = document.getElementById('recipes-grid');
     if (!list || list.length === 0) {
-      renderRecipesEmpty('Aucune recette disponible pour le moment.');
+      renderRecipesEmpty('Aucune recette pour ce filtre.');
       return;
     }
     grid.innerHTML = list.map(r => `
@@ -897,7 +1160,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <div class="recipe-card__img">
           ${r.photo_url
             ? `<img src="${escHtml(r.photo_url)}" alt="${escHtml(r.nom)}">`
-            : '🍽️'}
+            : escHtml(r.emoji || '🍽️')}
         </div>
         <div class="recipe-card__body">
           <div class="recipe-card__name">${escHtml(r.nom)}</div>
@@ -905,27 +1168,111 @@ document.addEventListener('DOMContentLoaded', () => {
           <div class="recipe-card__macros">
             P&nbsp;${r.proteines_total ?? 0}g · G&nbsp;${r.glucides_total ?? 0}g · L&nbsp;${r.lipides_total ?? 0}g
           </div>
+          ${r._source === 'perso' ? '<div style="margin-top:5px"><span style="font-size:.67rem;font-weight:600;background:#F2F2F7;color:#636366;border-radius:5px;padding:2px 7px">Ma recette</span></div>' : ''}
         </div>
       </div>
     `).join('');
   }
 
-  function renderRecipesEmpty(msg) {
+  function renderRecipesEmpty(msg, showCreate = false) {
     document.getElementById('recipes-grid').innerHTML = `
       <div class="recipes-empty">
-        <div class="recipes-empty__icon">🥗</div>
+        <div class="recipes-empty__icon">${showCreate ? '🍳' : '🥗'}</div>
         <div class="recipes-empty__text">${msg}</div>
+        ${showCreate ? '<button class="rc-create-btn" style="margin-top:14px" onclick="crOpenSheet()">+ Créer une recette</button>' : ''}
       </div>`;
   }
 
-  // Filtres
+  // Filtre catégorie
   document.querySelectorAll('.category-pill').forEach(pill => {
     pill.addEventListener('click', () => {
       document.querySelectorAll('.category-pill').forEach(p => p.classList.remove('active'));
       pill.classList.add('active');
       activeCategory = pill.dataset.cat;
-      loadRecipes(activeCategory);
+      applyFilters();
     });
+  });
+
+  // Filtre source
+  document.querySelectorAll('.source-pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.source-pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      activeSource = pill.dataset.source;
+      applyFilters();
+    });
+  });
+
+  // ── Bottom sheet création recette ────────────────────────────
+  window.crOpenSheet = function() {
+    document.getElementById('cr-sheet').classList.add('is-open');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('cr-nom').focus(), 350);
+  };
+  window.crCloseSheet = function() {
+    document.getElementById('cr-sheet').classList.remove('is-open');
+    document.body.style.overflow = '';
+    document.getElementById('cr-form').reset();
+    const preview = document.getElementById('cr-photo-preview');
+    preview.src = '';
+    preview.style.display = 'none';
+  };
+
+  document.getElementById('rc-open-btn').addEventListener('click', crOpenSheet);
+  document.getElementById('cr-overlay').addEventListener('click', crCloseSheet);
+  document.getElementById('cr-cancel-btn').addEventListener('click', crCloseSheet);
+
+  document.getElementById('cr-photo').addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    const preview = document.getElementById('cr-photo-preview');
+    if (file) {
+      preview.src = URL.createObjectURL(file);
+      preview.style.display = 'block';
+    } else {
+      preview.src = '';
+      preview.style.display = 'none';
+    }
+  });
+
+  document.getElementById('cr-form').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const nom       = document.getElementById('cr-nom').value.trim();
+    const categorie = document.getElementById('cr-categorie').value;
+    const kcal      = document.getElementById('cr-kcal').value;
+    if (!nom)       { toast('Nom requis', 'error'); return; }
+    if (!categorie) { toast('Choisis une catégorie', 'error'); return; }
+    if (!kcal)      { toast('Calories requises', 'error'); return; }
+    const btn = document.getElementById('cr-submit-btn');
+    const photoFile = document.getElementById('cr-photo').files[0] || null;
+    setLoading(btn, true);
+    try {
+      const created = await API.nutrition.recipes.create({
+        nom,
+        categorie,
+        calories_total:  Number(kcal),
+        proteines_total: Number(document.getElementById('cr-prot').value) || 0,
+        glucides_total:  Number(document.getElementById('cr-gluc').value) || 0,
+        lipides_total:   Number(document.getElementById('cr-lip').value)  || 0,
+        emoji:       document.getElementById('cr-emoji').value.trim() || null,
+        ingredients: document.getElementById('cr-ingredients').value.trim() || null,
+      });
+      if (photoFile && created?.id) {
+        const fd = new FormData();
+        fd.append('photo', photoFile);
+        await fetch(`/api/nutrition/recipes/${created.id}/photo`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${localStorage.getItem('token')}` },
+          body: fd
+        });
+      }
+      crCloseSheet();
+      toast('Recette créée !', 'success');
+      await loadRecipes(); // refresh complet avec nouveau tagging
+    } catch (err) {
+      toast(err.message || 'Erreur création', 'error');
+    } finally {
+      setLoading(btn, false);
+    }
   });
 
   // Modal
@@ -945,7 +1292,7 @@ document.addEventListener('DOMContentLoaded', () => {
     } else {
       hero.style.backgroundImage = '';
       emoji.style.display = '';
-      emoji.textContent = '🍽️';
+      emoji.textContent = r.emoji || '🍽️';
     }
 
     document.getElementById('modal-name').textContent    = r.nom;
@@ -1020,7 +1367,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 
   // Chargement initial
-  loadRecipes('all');
+  loadRecipes();
 });
 
 function escHtml(str) {

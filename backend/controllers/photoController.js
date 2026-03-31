@@ -6,12 +6,6 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // POST /api/photo/analyze
 async function analyzePhoto(req, res) {
   try {
-    // ── Debug : log ce qui arrive ──────────────────────────────
-    console.log('[photoAnalyze] req.file :', req.file
-      ? { fieldname: req.file.fieldname, mimetype: req.file.mimetype, size: req.file.size }
-      : 'absent');
-    console.log('[photoAnalyze] req.body keys:', Object.keys(req.body || {}));
-
     if (!req.file && !req.body.image_base64) {
       return res.status(400).json({ error: 'Image requise' });
     }
@@ -30,17 +24,19 @@ async function analyzePhoto(req, res) {
     const description = req.body.description || '';
     const weight_g    = req.body.weight_g    || '';
 
-    let prompt = `You are a nutrition expert. Analyze this meal photo precisely.`;
-    if (description) prompt += `\nThe user says: ${description}`;
-    if (weight_g)    prompt += `\nTotal plate weight is approximately ${weight_g}g`;
+    let prompt = `Tu es un expert en nutrition. Analyse cette photo de repas avec précision.
+Réponds uniquement en français. Les noms des aliments doivent être en français (ex: 'Poulet' pas 'Chicken', 'Saumon' pas 'Salmon', 'Haricots verts' pas 'Green beans').`;
+    if (description) prompt += `\nL'utilisateur précise : ${description}`;
+    if (weight_g)    prompt += `\nLe poids total de l'assiette est d'environ ${weight_g}g`;
     prompt += `
-Identify each food item separately. Estimate quantities in grams as accurately as possible. Calculate calories and macros for each item.
-Return ONLY a valid JSON object (no markdown, no explanation, no extra text):
-{"items":[{"name":"...","quantity_g":0,"calories":0,"protein_g":0,"carbs_g":0,"fat_g":0}],"total":{"calories":0,"protein_g":0,"carbs_g":0,"fat_g":0}}`;
+Identifie chaque aliment séparément. Utilise des noms simples et génériques sans adjectifs (ex: 'Poulet' pas 'Poulet grillé', 'Riz' pas 'Riz safrané', 'Haricots verts' pas 'Haricots verts à l'ail').
+Pour chaque aliment, estime la quantité avec soin en tenant compte de la taille de l'assiette visible. En cas de doute, légèrement surestimer plutôt que sous-estimer.
+Estime également les macronutriments pour chaque aliment.
+Retourne UNIQUEMENT du JSON valide : {"items":[{"name":"...","quantity_g":0,"kcal":0,"proteines_g":0,"lipides_g":0,"glucides_g":0,"fibres_g":0}]}`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o',
-      max_tokens: 900,
+      model: 'gpt-4o-mini',
+      max_tokens: 300,
       messages: [
         {
           role: 'user',
@@ -57,9 +53,6 @@ Return ONLY a valid JSON object (no markdown, no explanation, no extra text):
 
     const content = response.choices[0]?.message?.content?.trim();
 
-    // ── Log AVANT le parsing pour voir ce que GPT retourne ────
-    console.log('[photoAnalyze] RAW GPT content:', content);
-
     let nutrition;
     try {
       // Strip markdown code fences (avec ou sans \n après les backticks)
@@ -75,7 +68,6 @@ Return ONLY a valid JSON object (no markdown, no explanation, no extra text):
         clean = clean.slice(jsonStart, jsonEnd + 1);
       }
 
-      console.log('[photoAnalyze] Cleaned for parse:', clean.slice(0, 200));
       nutrition = JSON.parse(clean);
     } catch (parseErr) {
       console.error('[photoAnalyze] JSON parse failed:', parseErr.message);
@@ -86,30 +78,137 @@ Return ONLY a valid JSON object (no markdown, no explanation, no extra text):
       });
     }
 
-    console.log('[photoAnalyze] Parsed JSON:', JSON.stringify(nutrition, null, 2));
-
-    // Normalize to a stable schema regardless of what GPT returned
+    // ── BDD lookup + macro calculation ────────────────────────────────────
     const rawItems = nutrition.items || nutrition.aliments || nutrition.foods || [];
-    const normalized = {
-      aliments: rawItems.map(item => ({
-        nom:         item.name  || item.nom  || 'Aliment',
-        quantite_g:  item.quantity_g || item.quantite_g || item.weight_g || item.poids_g || 100,
-        calories:    item.calories   || item.kcal       || item.energy   || 0,
-        proteines_g: item.protein_g  || item.proteins_g || item.proteines_g || item.proteines || 0,
-        glucides_g:  item.carbs_g    || item.carbohydrates_g || item.glucides_g || item.glucides  || 0,
-        lipides_g:   item.fat_g      || item.fats_g     || item.lipides_g  || item.lipides   || 0,
-      })),
-      total: {
-        calories:    (nutrition.total?.calories    || nutrition.total?.kcal      || 0),
-        proteines_g: (nutrition.total?.protein_g   || nutrition.total?.proteines_g || 0),
-        glucides_g:  (nutrition.total?.carbs_g     || nutrition.total?.glucides_g  || 0),
-        lipides_g:   (nutrition.total?.fat_g       || nutrition.total?.lipides_g   || 0),
-      }
-    };
 
-    // Schéma de sortie stable (aligné avec photo.html) :
-    // { aliments:[{nom, quantite_g, calories, proteines_g, glucides_g, lipides_g}], total:{...} }
-    console.log('[photoAnalyze] Normalized:', JSON.stringify(normalized, null, 2));
+    /** Extract keywords: split on spaces, keep words > 3 chars */
+    function keywords(str) {
+      return str.split(/\s+/).filter(w => w.length > 3);
+    }
+
+    const CULINARY_ADJECTIVES = new Set([
+      'grilled','fried','baked','roasted','boiled','steamed','turmeric',
+      'yellow','white','brown','fresh','raw','cooked','spicy','garlic',
+      'crispy','creamy','seasoned','marinated','sauteed','stir-fried',
+      'smoked','curried','buttered',
+    ]);
+    const LINK_WORDS = new Set(['with','and','in','on','de','au','à','aux']);
+
+    /**
+     * Normalize a GPT food name before BDD lookup:
+     * lowercase → strip culinary adjectives & link words → trim.
+     * Returns up to 2 meaningful words (e.g. "green beans"), or 1.
+     */
+    function normalizeNom(nom) {
+      const words = nom.toLowerCase().split(/\s+/);
+      const kept = words.filter(w => !CULINARY_ADJECTIVES.has(w) && !LINK_WORDS.has(w));
+      // Keep at most 2 meaningful words so the ILIKE stays specific enough
+      return kept.slice(0, 2).join(' ').trim() || nom.toLowerCase().trim();
+    }
+
+    /**
+     * Search aliments_bruts via RPC (ORDER BY LENGTH — prioritise short/simple names).
+     * Falls back to JS chained query for aliments_prepares.
+     */
+    async function searchBruts(keyword) {
+      const { data, error } = await supabaseAdmin.rpc('search_aliment', { keyword });
+      if (error) {
+        console.warn('[photoAnalyze] rpc search_aliment error:', error.message);
+        return null;
+      }
+      return data && data.length > 0 ? data[0] : null;
+    }
+
+    async function searchPrepares(nom) {
+      const cols = 'nom, kcal_100g, proteines_100g, glucides_100g, lipides_100g';
+
+      const { data: full } = await supabaseAdmin
+        .from('aliments_prepares')
+        .select(cols)
+        .ilike('nom', `%${nom}%`)
+        .limit(1);
+      if (full && full.length > 0) return full[0];
+
+      const kws = keywords(nom);
+      for (const kw of kws) {
+        const { data: kwr } = await supabaseAdmin
+          .from('aliments_prepares')
+          .select(cols)
+          .ilike('nom', `%${kw}%`)
+          .limit(1);
+        if (kwr && kwr.length > 0) return kwr[0];
+      }
+      return null;
+    }
+
+    /** Search bruts via RPC (full name then keywords), then prepares fallback */
+    async function searchTable(_, nom) {
+      // Pass 1: full name via RPC
+      let match = await searchBruts(nom);
+      if (match) return match;
+
+      // Pass 2: keyword-by-keyword via RPC
+      const kws = keywords(nom);
+      for (const kw of kws) {
+        match = await searchBruts(kw);
+        if (match) return match;
+      }
+
+      return null;
+    }
+
+    const enrichedItems = await Promise.all(rawItems.map(async (item) => {
+      const nom        = item.name || item.nom || 'Aliment';
+      const quantite_g = item.quantity_g || item.quantite_g || item.weight_g || item.poids_g || 100;
+      const ratio      = quantite_g / 100;
+
+      const nomNorm = normalizeNom(nom);
+
+      // 1. Search aliments_bruts via RPC (ORDER BY LENGTH, filters applied server-side)
+      let match = await searchTable(null, nomNorm);
+
+      // 2. Fallback: search aliments_prepares
+      if (!match) {
+        match = await searchPrepares(nomNorm);
+      }
+
+      if (match) {
+        return {
+          nom,
+          quantite_g,
+          calories:    Math.round(match.kcal_100g      * ratio),
+          proteines_g: Math.round(match.proteines_100g * ratio * 10) / 10,
+          glucides_g:  Math.round(match.glucides_100g  * ratio * 10) / 10,
+          lipides_g:   Math.round(match.lipides_100g   * ratio * 10) / 10,
+          source: 'bdd',
+        };
+      }
+
+      // 3. Fallback: use GPT estimation values if present, else zeros
+      return {
+        nom,
+        quantite_g,
+        calories:    item.calories  || item.kcal  || 0,
+        proteines_g: item.protein_g || item.proteins_g || item.proteines_g || 0,
+        glucides_g:  item.carbs_g   || item.carbohydrates_g || item.glucides_g || 0,
+        lipides_g:   item.fat_g     || item.fats_g || item.lipides_g || 0,
+        source: 'estimation_ia',
+      };
+    }));
+
+    // ── Compute totals from enriched items ────────────────────────────────
+    const total = enrichedItems.reduce(
+      (acc, it) => ({
+        calories:    acc.calories    + (it.calories    || 0),
+        proteines_g: acc.proteines_g + (it.proteines_g || 0),
+        glucides_g:  acc.glucides_g  + (it.glucides_g  || 0),
+        lipides_g:   acc.lipides_g   + (it.lipides_g   || 0),
+      }),
+      { calories: 0, proteines_g: 0, glucides_g: 0, lipides_g: 0 }
+    );
+
+    const normalized = { aliments: enrichedItems, total };
+
     res.json(normalized);
   } catch (err) {
     console.error('[photoAnalyze]', err);

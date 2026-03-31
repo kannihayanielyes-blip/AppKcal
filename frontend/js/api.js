@@ -265,7 +265,14 @@ const API = {
     addLog:      (body) => request('POST', '/nutrition/log', body),
     updateLog:   (id, body) => request('PUT', `/nutrition/log/${id}`, body),
     deleteLog:   (id) => request('DELETE', `/nutrition/log/${id}`),
-    recipes:          (category) => request('GET', `/nutrition/recipes${category && category !== 'all' ? '?category=' + category : ''}`),
+    recipes: Object.assign(
+      (category) => request('GET', `/nutrition/recipes${category && category !== 'all' ? '?category=' + category : ''}`),
+      {
+        mine:   ()     => request('GET',    '/nutrition/recipes/mine'),
+        create: (data) => request('POST',   '/nutrition/recipes', data),
+        delete: (id)   => request('DELETE', `/nutrition/recipes/${id}`)
+      }
+    ),
     smartSuggestions: () => request('GET', '/nutrition/smart-suggestions')
   },
 

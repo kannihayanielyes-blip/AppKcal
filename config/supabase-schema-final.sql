@@ -21,7 +21,11 @@ DROP TABLE IF EXISTS exercices_seance      CASCADE;
 DROP TABLE IF EXISTS seances_user          CASCADE;
 DROP TABLE IF EXISTS programmes_user       CASCADE;
 DROP TABLE IF EXISTS exercices_catalogue   CASCADE;
+DROP TABLE IF EXISTS recette_ingredients   CASCADE;
+DROP TABLE IF EXISTS aliments_prepares     CASCADE;
+DROP TABLE IF EXISTS aliments_bruts        CASCADE;
 DROP TABLE IF EXISTS recettes              CASCADE;
+DROP TABLE IF EXISTS ingredients           CASCADE;
 DROP TABLE IF EXISTS invite_codes          CASCADE;
 DROP TABLE IF EXISTS weight_logs           CASCADE;
 DROP TABLE IF EXISTS nutrition_logs        CASCADE;
@@ -70,6 +74,76 @@ CREATE POLICY "profiles_update_own"
 CREATE POLICY "profiles_insert_service"
   ON profiles FOR INSERT
   WITH CHECK (true);
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 1bis. MIGRATION — MODE AVANCÉ (profiles)
+--    Ajoute les colonnes nécessaires au mode avancé / objectifs personnalisés.
+--    Idempotent : peut être rejoué sans risque sur une BDD existante.
+-- ────────────────────────────────────────────────────────────────────
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS mode             TEXT    CHECK (mode IN ('guided', 'advanced')) DEFAULT 'guided';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS weight_goal_kg   NUMERIC DEFAULT NULL;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS kcal_current     INTEGER DEFAULT NULL;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS protein_target_g NUMERIC DEFAULT NULL;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS carbs_target_g   NUMERIC DEFAULT NULL;
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS fat_target_g     NUMERIC DEFAULT NULL;
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 1ter. MIGRATION — PRÉFÉRENCES ALIMENTAIRES (profiles)
+--    Ajoute les listes d'aliments aimés / non aimés.
+--    Idempotent : peut être rejoué sans risque sur une BDD existante.
+-- ────────────────────────────────────────────────────────────────────
+
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS liked_foods    TEXT[] DEFAULT '{}';
+ALTER TABLE profiles ADD COLUMN IF NOT EXISTS disliked_foods TEXT[] DEFAULT '{}';
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 1quater. MIGRATION — INVITE_CODES (max_uses / use_count / expires_at)
+--    Retire les colonnes used/used_at, ajoute le système de quota et expiration.
+--    Idempotent : peut être rejoué sans risque sur une BDD existante.
+-- ────────────────────────────────────────────────────────────────────
+
+ALTER TABLE invite_codes ADD COLUMN IF NOT EXISTS max_uses   INTEGER     DEFAULT NULL;
+ALTER TABLE invite_codes ADD COLUMN IF NOT EXISTS use_count  INTEGER     NOT NULL DEFAULT 0;
+ALTER TABLE invite_codes ADD COLUMN IF NOT EXISTS expires_at TIMESTAMPTZ DEFAULT NULL;
+ALTER TABLE invite_codes DROP COLUMN IF EXISTS used;
+ALTER TABLE invite_codes DROP COLUMN IF EXISTS used_at;
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 1quinquies. MIGRATION — TABLE INGREDIENTS
+--    Référentiel d'ingrédients avec macros par 100 g et catégorisation.
+--    Idempotent : peut être rejoué sans risque sur une BDD existante.
+-- ────────────────────────────────────────────────────────────────────
+
+CREATE TABLE IF NOT EXISTS ingredients (
+  id         UUID    PRIMARY KEY DEFAULT gen_random_uuid(),
+  nom        TEXT    NOT NULL UNIQUE,
+  categorie  TEXT    NOT NULL
+             CHECK (categorie IN ('viande', 'poisson', 'feculents',
+             'legumes', 'fruits', 'laitiers', 'graisses', 'autres')),
+  calories   NUMERIC DEFAULT 0,
+  proteines  NUMERIC DEFAULT 0,
+  glucides   NUMERIC DEFAULT 0,
+  lipides    NUMERIC DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE ingredients ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "ingredients_select" ON ingredients;
+CREATE POLICY "ingredients_select"
+  ON ingredients FOR SELECT
+  TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "ingredients_service" ON ingredients;
+CREATE POLICY "ingredients_service"
+  ON ingredients FOR ALL USING (true);
+
+CREATE INDEX IF NOT EXISTS idx_ingredients_categorie ON ingredients(categorie);
 
 
 -- ────────────────────────────────────────────────────────────────────
@@ -136,8 +210,9 @@ CREATE INDEX idx_weight_logs_user_date ON weight_logs (user_id, date);
 CREATE TABLE invite_codes (
   id          UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
   code        TEXT        NOT NULL UNIQUE,
-  used        BOOLEAN     NOT NULL DEFAULT FALSE,
-  used_at     TIMESTAMPTZ,
+  max_uses    INTEGER     DEFAULT NULL,
+  use_count   INTEGER     NOT NULL DEFAULT 0,
+  expires_at  TIMESTAMPTZ DEFAULT NULL,
   note        TEXT,
   created_at  TIMESTAMPTZ DEFAULT NOW()
 );
@@ -188,9 +263,11 @@ CREATE POLICY "recettes_select_authenticated"
   TO authenticated
   USING (is_visible = true);
 
--- Gestion complète par le service (admin bypass)
+-- Gestion complète par le service (admin bypass, service_role uniquement)
+DROP POLICY IF EXISTS "recettes_all_service" ON recettes;
 CREATE POLICY "recettes_all_service"
   ON recettes FOR ALL
+  TO service_role
   USING (true);
 
 CREATE INDEX idx_recettes_categorie   ON recettes (categorie);
@@ -198,7 +275,161 @@ CREATE INDEX idx_recettes_is_visible  ON recettes (is_visible);
 
 
 -- ────────────────────────────────────────────────────────────────────
--- 6. EXERCICES_CATALOGUE
+-- 5bis. MIGRATION — RECETTES UTILISATEURS
+--    Ajoute le support des recettes personnelles créées par les users.
+--    Idempotent : peut être rejoué sans risque sur une BDD existante.
+-- ────────────────────────────────────────────────────────────────────
+
+-- 1. Colonne user_id (NULL = recette admin/partagée, UUID = recette perso)
+ALTER TABLE recettes
+  ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE DEFAULT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_recettes_user_id ON recettes (user_id) WHERE user_id IS NOT NULL;
+
+ALTER TABLE recettes ADD COLUMN IF NOT EXISTS ingredient_ids UUID[] DEFAULT '{}';
+
+-- 2. Remplace la policy SELECT (recettes visibles OU appartenant à l'user)
+DROP POLICY IF EXISTS "recettes_select_authenticated" ON recettes;
+
+CREATE POLICY "recettes_select_authenticated"
+  ON recettes FOR SELECT
+  TO authenticated
+  USING (
+    (is_visible = true AND user_id IS NULL)
+    OR user_id = auth.uid()
+  );
+
+-- 3. Policy INSERT — l'user ne peut créer que ses propres recettes
+CREATE POLICY "recettes_insert_own"
+  ON recettes FOR INSERT
+  TO authenticated
+  WITH CHECK (user_id = auth.uid());
+
+-- 4. Policy DELETE — l'user ne peut supprimer que ses propres recettes
+CREATE POLICY "recettes_delete_own"
+  ON recettes FOR DELETE
+  TO authenticated
+  USING (user_id = auth.uid());
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 6bis. RECETTE_INGREDIENTS
+--    Table de liaison recettes ↔ aliments_bruts
+--    Permet de calculer les macros exactes d'une recette à partir
+--    des données nutritionnelles de la BDD aliments_bruts.
+-- ────────────────────────────────────────────────────────────────────
+
+CREATE TABLE recette_ingredients (
+  id            UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  recette_id    UUID        NOT NULL REFERENCES recettes(id) ON DELETE CASCADE,
+  aliment_id    UUID        NOT NULL REFERENCES aliments_bruts(id) ON DELETE RESTRICT,
+  quantite_g    NUMERIC     NOT NULL CHECK (quantite_g > 0),
+  created_at    TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE recette_ingredients ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "recette_ingredients_select"
+  ON recette_ingredients FOR SELECT
+  TO authenticated USING (true);
+
+CREATE POLICY "recette_ingredients_service"
+  ON recette_ingredients FOR ALL USING (true);
+
+CREATE INDEX idx_recette_ingredients_recette ON recette_ingredients(recette_id);
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 6. ALIMENTS_BRUTS
+--    Aliments simples non transformés (CIQUAL / USDA)
+--    Sert de base pour les suggestions nutritionnelles et l'autocomplétion
+-- ────────────────────────────────────────────────────────────────────
+
+CREATE TABLE aliments_bruts (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  nom             TEXT        NOT NULL,
+  nom_en          TEXT,                                             -- nom anglais pour matching USDA
+  categorie       TEXT        CHECK (categorie IN (
+                                'viande', 'poisson', 'fruit', 'legume',
+                                'feculent', 'legumineuse', 'produit_laitier',
+                                'oeuf', 'oleagineux', 'huile', 'autre'
+                              )),
+  kcal_100g       NUMERIC     NOT NULL CHECK (kcal_100g >= 0),
+  proteines_100g  NUMERIC     NOT NULL DEFAULT 0,
+  glucides_100g   NUMERIC     NOT NULL DEFAULT 0,
+  lipides_100g    NUMERIC     NOT NULL DEFAULT 0,
+  fibres_100g     NUMERIC     DEFAULT 0,
+  sucres_100g     NUMERIC     DEFAULT 0,
+  sel_100g        NUMERIC     DEFAULT 0,
+  source          TEXT        CHECK (source IN ('ciqual', 'usda')),
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE aliments_bruts ENABLE ROW LEVEL SECURITY;
+
+-- Lecture pour tous les users authentifiés
+CREATE POLICY "aliments_bruts_select_authenticated"
+  ON aliments_bruts FOR SELECT
+  TO authenticated
+  USING (true);
+
+-- Écriture réservée au service (supabaseAdmin bypass RLS)
+CREATE POLICY "aliments_bruts_all_service"
+  ON aliments_bruts FOR ALL
+  USING (true);
+
+CREATE INDEX idx_aliments_bruts_nom       ON aliments_bruts (nom);
+CREATE INDEX idx_aliments_bruts_categorie ON aliments_bruts (categorie);
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 7. ALIMENTS_PREPARES
+--    Produits transformés / plats préparés (Open Food Facts + maison)
+--    Le champ barcode permet la recherche par scan (EAN-13)
+-- ────────────────────────────────────────────────────────────────────
+
+CREATE TABLE aliments_prepares (
+  id              UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
+  nom             TEXT        NOT NULL,
+  categorie       TEXT        CHECK (categorie IN (
+                                'plat', 'sauce', 'snack', 'boisson',
+                                'fast_food', 'smoothie', 'autre'
+                              )),
+  barcode         TEXT        UNIQUE,                               -- code-barres EAN-13 (Open Food Facts)
+  kcal_100g       NUMERIC     NOT NULL CHECK (kcal_100g >= 0),
+  proteines_100g  NUMERIC     NOT NULL DEFAULT 0,
+  glucides_100g   NUMERIC     NOT NULL DEFAULT 0,
+  lipides_100g    NUMERIC     NOT NULL DEFAULT 0,
+  fibres_100g     NUMERIC     DEFAULT 0,
+  sucres_100g     NUMERIC     DEFAULT 0,
+  sel_100g        NUMERIC     DEFAULT 0,
+  portion_g       NUMERIC     DEFAULT 100,                         -- portion de référence en grammes
+  source          TEXT        CHECK (source IN ('maison', 'open_food_facts')),
+  is_visible      BOOLEAN     NOT NULL DEFAULT TRUE,
+  created_at      TIMESTAMPTZ DEFAULT NOW()
+);
+
+ALTER TABLE aliments_prepares ENABLE ROW LEVEL SECURITY;
+
+-- Lecture pour tous les users authentifiés (entrées visibles uniquement)
+CREATE POLICY "aliments_prepares_select_authenticated"
+  ON aliments_prepares FOR SELECT
+  TO authenticated
+  USING (is_visible = true);
+
+-- Écriture réservée au service (supabaseAdmin bypass RLS)
+CREATE POLICY "aliments_prepares_all_service"
+  ON aliments_prepares FOR ALL
+  USING (true);
+
+CREATE INDEX idx_aliments_prepares_nom       ON aliments_prepares (nom);
+CREATE INDEX idx_aliments_prepares_categorie ON aliments_prepares (categorie);
+CREATE INDEX idx_aliments_prepares_barcode   ON aliments_prepares (barcode)
+  WHERE barcode IS NOT NULL;
+
+
+-- ────────────────────────────────────────────────────────────────────
+-- 8. EXERCICES_CATALOGUE  (ex-6)
 --    Table statique des exercices disponibles (miroir de la route GET /exercices)
 --    Permet des extensions futures (photos, vidéos, descriptions…)
 -- ────────────────────────────────────────────────────────────────────
@@ -625,5 +856,7 @@ ON CONFLICT DO NOTHING;
 --   SELECT COUNT(*) FROM invite_codes;        -- 7
 --   SELECT COUNT(*) FROM exercices_catalogue; -- 46
 --   SELECT COUNT(*) FROM recettes;            -- 18
+--   SELECT COUNT(*) FROM aliments_bruts;      -- 0 (à alimenter via CIQUAL/USDA)
+--   SELECT COUNT(*) FROM aliments_prepares;   -- 0 (à alimenter via Open Food Facts)
 --
 -- ════════════════════════════════════════════════════════════════════

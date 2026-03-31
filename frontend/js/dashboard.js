@@ -39,6 +39,17 @@ async function loadProfile() {
     // Stocker l'objectif kcal du profil
     window._dailyKcal = profile.daily_kcal_target || 2000;
 
+    // Stocker les objectifs macros (mode avancé uniquement)
+    const hasCustomMacros = profile.protein_target_g || profile.carbs_target_g || profile.fat_target_g;
+    window._macroTargets = (profile.mode === 'advanced' && hasCustomMacros)
+      ? {
+          protein: profile.protein_target_g || null,
+          carbs:   profile.carbs_target_g   || null,
+          fat:     profile.fat_target_g     || null
+        }
+      : null;
+    updateMacroBadges();
+
     // Mettre à jour le cache localStorage avec le vrai username Supabase
     if (cachedUser && profile.username) {
       cachedUser.username = profile.username;
@@ -48,7 +59,15 @@ async function loadProfile() {
     console.error('[loadProfile] erreur:', err);
     // Utiliser les données en cache si l'API échoue
     window._dailyKcal = 2000;
+    window._macroTargets = null;
   }
+}
+
+// ── Accent dynamique selon progression ────────────────────────
+function getAccentColor(percent) {
+  if (percent >= 100) return '#22C55E'; // --accent-success
+  if (percent >= 70)  return '#F59E0B'; // --accent-warning
+  return '#EF4444';                     // --accent-danger
 }
 
 // ── Today's nutrition ─────────────────────────────────────────
@@ -61,21 +80,55 @@ async function loadTodayData() {
     document.getElementById('kcal-consumed').textContent = Math.round(totals.kcal);
     document.getElementById('kcal-target').textContent   = target;
     const pct = Math.min(100, (totals.kcal / target) * 100);
-    document.getElementById('kcal-bar').style.width = pct + '%';
+    const bar = document.getElementById('kcal-bar');
+    bar.style.width = pct + '%';
+    bar.style.backgroundColor = getAccentColor(pct);
 
-    // Macros
+    // Macros (valeurs consommées brutes — updateMacroBadges gère l'affichage cible)
     document.getElementById('macro-protein').textContent = Math.round(totals.protein);
     document.getElementById('macro-carbs').textContent   = Math.round(totals.carbs);
     document.getElementById('macro-fat').textContent     = Math.round(totals.fat);
 
-    // Stocker pour les suggestions
+    // Stocker pour les suggestions et les barres macros
     window._consumedKcal = totals.kcal || 0;
+    window._macroTotals  = totals;
+    updateMacroBadges();
 
     // Food list
     renderFoodList(logs);
   } catch (err) {
     console.error('[loadTodayData]', err);
   }
+}
+
+// ── Macro badges (objectifs avancés) ─────────────────────────
+function updateMacroBadges() {
+  const totals  = window._macroTotals;
+  const targets = window._macroTargets;
+
+  const configs = [
+    { key: 'protein', label: 'Protéines' },
+    { key: 'carbs',   label: 'Glucides'  },
+    { key: 'fat',     label: 'Lipides'   },
+  ];
+
+  configs.forEach(({ key }) => {
+    const consumed  = totals ? (totals[key] || 0) : null;
+    const target    = targets ? targets[key] : null;
+    const targetEl  = document.getElementById(`macro-${key}-target`);
+    const barEl     = document.getElementById(`macro-${key}-bar`);
+    const barWrap   = document.getElementById(`macro-${key}-bar-wrap`);
+
+    if (target && consumed !== null) {
+      const pct = Math.min(100, (consumed / target) * 100);
+      if (targetEl)  { targetEl.textContent = '/ ' + Math.round(target) + 'g'; targetEl.style.display = ''; }
+      if (barEl)       barEl.style.width = pct + '%';
+      if (barWrap)     barWrap.style.display = '';
+    } else {
+      if (targetEl)  { targetEl.textContent = ''; targetEl.style.display = 'none'; }
+      if (barWrap)     barWrap.style.display = 'none';
+    }
+  });
 }
 
 function renderFoodList(logs) {
@@ -410,8 +463,8 @@ function renderWeightChart(data) {
 
   // Gradient fill
   const gradient = ctx.createLinearGradient(0, 0, 0, 180);
-  gradient.addColorStop(0, 'rgba(107,124,69,.35)');
-  gradient.addColorStop(1, 'rgba(107,124,69,.0)');
+  gradient.addColorStop(0, 'rgba(13,13,13,.12)');
+  gradient.addColorStop(1, 'rgba(13,13,13,.0)');
 
   const labels = data.map(d => {
     const dt = new Date(d.date);
@@ -428,12 +481,12 @@ function renderWeightChart(data) {
       labels,
       datasets: [{
         data: values,
-        borderColor: '#6B7C45',
-        borderWidth: 2.5,
+        borderColor: '#0D0D0D',
+        borderWidth: 1.5,
         backgroundColor: gradient,
-        pointBackgroundColor: '#6B7C45',
-        pointRadius: data.length === 1 ? 5 : 3,
-        pointHoverRadius: 6,
+        pointBackgroundColor: '#0D0D0D',
+        pointRadius: data.length === 1 ? 4 : 2,
+        pointHoverRadius: 5,
         fill: true,
         tension: 0.35
       }]
@@ -452,11 +505,11 @@ function renderWeightChart(data) {
       scales: {
         x: {
           grid: { display: false },
-          ticks: { font: { size: 10 }, maxTicksLimit: 6, color: '#6B7070' }
+          ticks: { font: { size: 10, family: 'DM Mono' }, maxTicksLimit: 6, color: '#9B9B9B' }
         },
         y: {
-          grid: { color: '#EAEAE3' },
-          ticks: { font: { size: 10 }, color: '#6B7070', callback: v => v + ' kg' },
+          grid: { color: '#F0F0EE' },
+          ticks: { font: { size: 10, family: 'DM Mono' }, color: '#9B9B9B', callback: v => v + ' kg' },
           // zoom autour des valeurs réelles
           suggestedMin: Math.min(...values) - 1,
           suggestedMax: Math.max(...values) + 1
