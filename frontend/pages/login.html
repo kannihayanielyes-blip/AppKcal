@@ -114,6 +114,139 @@
 </div>
 
 <div id="toast-container"></div>
+
+<!-- PWA install banner -->
+<div id="pwa-banner" style="
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:999;
+  background:#111111;
+  color:#ffffff;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+  box-shadow:0 -2px 16px rgba(0,0,0,0.25);
+  animation:slideUp .3s cubic-bezier(0.32,0.72,0,1);
+">
+  <style>
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    #pwa-banner-inner {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      max-width:480px;
+      margin:0 auto;
+    }
+    #pwa-banner-text {
+      flex:1;
+      font-family:-apple-system,sans-serif;
+      font-size:.875rem;
+      line-height:1.4;
+    }
+    #pwa-banner-text strong {
+      display:block;
+      font-size:.9375rem;
+      margin-bottom:2px;
+    }
+    #pwa-install-btn {
+      flex-shrink:0;
+      background:#6B7C45;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      font-size:.875rem;
+      font-weight:600;
+      padding:9px 16px;
+      cursor:pointer;
+      white-space:nowrap;
+      -webkit-tap-highlight-color:transparent;
+    }
+    #pwa-install-btn:active { opacity:.8; }
+    #pwa-dismiss-btn {
+      flex-shrink:0;
+      background:none;
+      border:none;
+      color:rgba(255,255,255,0.5);
+      font-size:20px;
+      line-height:1;
+      cursor:pointer;
+      padding:4px;
+      -webkit-tap-highlight-color:transparent;
+    }
+    #pwa-ios-icon {
+      display:inline-block;
+      width:18px;height:18px;
+      vertical-align:middle;
+      margin:0 2px;
+      opacity:.9;
+    }
+  </style>
+  <div id="pwa-banner-inner">
+    <div id="pwa-banner-text">
+      <strong id="pwa-title">📲 Installer AppKcal</strong>
+      <span id="pwa-subtitle">Accès rapide depuis ton écran d'accueil</span>
+    </div>
+    <button id="pwa-install-btn" style="display:none">Installer</button>
+    <button id="pwa-dismiss-btn" aria-label="Fermer">×</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const STORAGE_KEY = 'pwa_banner_dismissed';
+  if (localStorage.getItem(STORAGE_KEY)) return;
+
+  const banner      = document.getElementById('pwa-banner');
+  const installBtn  = document.getElementById('pwa-install-btn');
+  const dismissBtn  = document.getElementById('pwa-dismiss-btn');
+  const subtitle    = document.getElementById('pwa-subtitle');
+
+  function dismiss() {
+    localStorage.setItem(STORAGE_KEY, '1');
+    banner.style.animation = 'slideUp .25s cubic-bezier(0.32,0.72,0,1) reverse forwards';
+    setTimeout(() => banner.style.display = 'none', 260);
+  }
+  dismissBtn.addEventListener('click', dismiss);
+
+  // ── Android / Chrome — beforeinstallprompt ──────────────────
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+    banner.style.display = 'block';
+
+    installBtn.addEventListener('click', async () => {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      dismiss();
+    }, { once: true });
+  });
+
+  window.addEventListener('appinstalled', dismiss);
+
+  // ── iOS / Safari — instructions manuelles ──────────────────
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isIOS && !isStandalone && isSafari) {
+    subtitle.innerHTML =
+      'Appuie sur ' +
+      '<svg id="pwa-ios-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>' +
+        '<polyline points="16 6 12 2 8 6"/>' +
+        '<line x1="12" y1="2" x2="12" y2="15"/>' +
+      '</svg>' +
+      ' puis <strong style="color:#a8c16a">"Sur l\'écran d\'accueil"</strong>';
+    banner.style.display = 'block';
+  }
+})();
+</script>
+
 <script src="/js/api.js"></script>
 <script src="/js/auth.js"></script>
 </body>
