@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const multer = require('multer');
-const { analyzePhoto } = require('../controllers/photoController');
+const { analyzePhoto, getPhotoQuota } = require('../controllers/photoController');
 const { requireAuth } = require('../middleware/auth');
 
 const upload = multer({
@@ -13,6 +13,7 @@ const upload = multer({
 });
 
 router.use(requireAuth);
+router.get('/quota', getPhotoQuota);
 router.post('/analyze', upload.single('photo'), analyzePhoto);
 
 module.exports = router;

@@ -231,7 +231,10 @@ async function request(method, path, body = null, options = {}) {
   }
 
   if (!res.ok) {
-    throw new Error(data.error || `Erreur ${res.status}`);
+    const err = new Error(data.error || `Erreur ${res.status}`);
+    err.status = res.status;
+    err.data   = data;
+    throw err;
   }
 
   return data;
@@ -278,7 +281,8 @@ const API = {
 
   // Photo
   photo: {
-    analyze: (formData) => request('POST', '/photo/analyze', formData)
+    analyze: (formData) => request('POST', '/photo/analyze', formData),
+    quota:   ()         => request('GET',  '/photo/quota')
   },
 
   // Invite

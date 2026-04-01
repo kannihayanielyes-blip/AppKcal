@@ -27,6 +27,49 @@ async function analyzePhoto(req, res) {
     const description = req.body.description || '';
     const weight_g    = req.body.weight_g    || '';
 
+    // ── Vérification quota photo ──────────────────────────────────────────
+    const { data: profile, error: profileErr } = await supabaseAdmin
+      .from('profiles')
+      .select('is_premium, photo_quota_daily')
+      .eq('id', req.user.id)
+      .single();
+
+    if (profileErr) {
+      console.error('[photoAnalyze] profile fetch error:', profileErr.message);
+      return res.status(500).json({ error: 'Erreur lors de la vérification du quota' });
+    }
+
+    if (!profile.is_premium) {
+      const today = new Date().toISOString().slice(0, 10);
+      const quota = profile.photo_quota_daily ?? 3;
+
+      const { data: usage } = await supabaseAdmin
+        .from('photo_usage')
+        .select('count')
+        .eq('user_id', req.user.id)
+        .eq('date', today)
+        .single();
+
+      const used = usage?.count ?? 0;
+
+      if (used >= quota) {
+        return res.status(429).json({
+          error: 'Quota journalier atteint',
+          message: 'Tu as utilisé tes 3 analyses photo du jour. Reviens demain ou passe en premium.',
+          quota,
+          used,
+        });
+      }
+
+      await supabaseAdmin
+        .from('photo_usage')
+        .upsert(
+          { user_id: req.user.id, date: today, count: used + 1 },
+          { onConflict: 'user_id,date' }
+        );
+    }
+    // ─────────────────────────────────────────────────────────────────────
+
     let prompt = `Tu es un expert en nutrition. Analyse cette photo de repas avec précision.
 Réponds uniquement en français. Les noms des aliments doivent être en français (ex: 'Poulet' pas 'Chicken', 'Saumon' pas 'Salmon', 'Haricots verts' pas 'Green beans').`;
     if (description) prompt += `\nL'utilisateur précise : ${description}`;
@@ -222,4 +265,34 @@ Retourne UNIQUEMENT du JSON valide : {"items":[{"name":"...","quantity_g":0,"kca
   }
 }
 
-module.exports = { analyzePhoto };
+// GET /api/photo/quota
+async function getPhotoQuota(req, res) {
+  try {
+    const { data: profile, error } = await supabaseAdmin
+      .from('profiles')
+      .select('is_premium, photo_quota_daily')
+      .eq('id', req.user.id)
+      .single();
+
+    if (error) return res.status(500).json({ error: 'Erreur profil' });
+
+    const quota = profile.photo_quota_daily ?? 3;
+    const isPremium = profile.is_premium ?? false;
+
+    if (isPremium) return res.json({ is_premium: true, quota: null, used: 0 });
+
+    const today = new Date().toISOString().slice(0, 10);
+    const { data: usage } = await supabaseAdmin
+      .from('photo_usage')
+      .select('count')
+      .eq('user_id', req.user.id)
+      .eq('date', today)
+      .single();
+
+    res.json({ is_premium: false, quota, used: usage?.count ?? 0 });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+module.exports = { analyzePhoto, getPhotoQuota };

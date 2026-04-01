@@ -295,6 +295,103 @@
       to   { transform: translateY(0); }
     }
 
+    /* ── Quota banner ── */
+    .quota-banner {
+      margin: 10px 20px 0;
+      padding: 9px 14px;
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      border: 1.5px solid var(--cream-d);
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: .82rem;
+      font-weight: 600;
+      color: var(--text);
+      transition: border-color .2s;
+    }
+    .quota-banner.hidden { display: none; }
+    .quota-banner__label { flex: 1; }
+    .quota-banner__bar {
+      flex: 1;
+      height: 5px;
+      background: var(--cream-d);
+      border-radius: 3px;
+      overflow: hidden;
+    }
+    .quota-banner__fill {
+      height: 100%;
+      border-radius: 3px;
+      background: var(--olive);
+      transition: width .4s ease, background .3s;
+    }
+    .quota-banner__fill.full { background: #d9534f; }
+    .quota-banner.premium {
+      border-color: #c8b96a;
+      background: linear-gradient(135deg, #fdfbf0, #faf5e0);
+      color: #7a6820;
+    }
+
+    /* ── Quota wall (429) ── */
+    .quota-wall {
+      margin: 20px 20px 0;
+      background: var(--white);
+      border-radius: var(--radius-xl);
+      padding: 32px 24px 28px;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+      display: none;
+    }
+    .quota-wall.visible { display: block; }
+    .quota-wall__icon {
+      font-size: 3.2rem;
+      margin-bottom: 16px;
+      display: block;
+    }
+    .quota-wall__title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+    .quota-wall__sub {
+      font-size: .88rem;
+      color: var(--text-muted);
+      line-height: 1.55;
+      margin-bottom: 24px;
+    }
+    .quota-wall__counter {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #fff0f0;
+      border: 1.5px solid #f5c6c6;
+      border-radius: 99px;
+      padding: 5px 14px;
+      font-size: .82rem;
+      font-weight: 700;
+      color: #c0392b;
+      margin-bottom: 24px;
+    }
+    .quota-wall__btn {
+      display: block;
+      width: 100%;
+      background: var(--olive);
+      color: var(--white);
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 15px;
+      font-size: .95rem;
+      font-weight: 700;
+      cursor: pointer;
+      font-family: inherit;
+      text-decoration: none;
+      -webkit-tap-highlight-color: transparent;
+      transition: opacity .15s;
+      box-sizing: border-box;
+    }
+    .quota-wall__btn:active { opacity: .8; }
+
     /* ── Section header (title + create btn) ── */
     .recipes-section__header {
       display: flex;
@@ -733,6 +830,23 @@
     <button class="photo-header__back" onclick="history.length>1?history.back():location.href='/pages/dashboard.html'" aria-label="Retour">←</button>
   </div>
 
+  <!-- Quota banner -->
+  <div class="quota-banner hidden" id="quota-banner">
+    <span class="quota-banner__label" id="quota-label">Chargement...</span>
+    <div class="quota-banner__bar" id="quota-bar-wrap">
+      <div class="quota-banner__fill" id="quota-bar-fill" style="width:0%"></div>
+    </div>
+  </div>
+
+  <!-- Quota wall (429) -->
+  <div class="quota-wall" id="quota-wall">
+    <span class="quota-wall__icon">📸</span>
+    <div class="quota-wall__title">Tu as utilisé tes 3 photos du jour</div>
+    <div class="quota-wall__sub">Reviens demain ou passe en premium<br>pour des analyses illimitées.</div>
+    <div class="quota-wall__counter" id="quota-wall-counter">3 / 3 analyses utilisées</div>
+    <a class="quota-wall__btn" href="/pages/profile.html">En savoir plus sur le premium</a>
+  </div>
+
   <!-- Drop zone -->
   <div class="photo-area" id="photo-area" onclick="triggerPhoto()">
     <div class="photo-area__icon">📷</div>
@@ -1001,6 +1115,51 @@
 document.addEventListener('DOMContentLoaded', () => {
   if (!requireAuth()) return;
 
+  // ── Quota banner ─────────────────────────────────────────────
+  let _quotaData = null; // { is_premium, quota, used }
+
+  async function loadPhotoQuota() {
+    try {
+      const q = await API.photo.quota();
+      _quotaData = q;
+      renderQuotaBanner(q);
+    } catch (_) { /* silencieux */ }
+  }
+
+  function renderQuotaBanner({ is_premium, quota, used }) {
+    const banner   = document.getElementById('quota-banner');
+    const label    = document.getElementById('quota-label');
+    const fill     = document.getElementById('quota-bar-fill');
+    const barWrap  = document.getElementById('quota-bar-wrap');
+
+    banner.classList.remove('hidden');
+
+    if (is_premium) {
+      banner.classList.add('premium');
+      barWrap.style.display = 'none';
+      label.textContent = '✨ Premium — analyses illimitées';
+      return;
+    }
+
+    const pct = Math.min(100, Math.round((used / quota) * 100));
+    label.textContent = `📸 ${used}/${quota} analyses utilisées aujourd'hui`;
+    fill.style.width  = pct + '%';
+    fill.classList.toggle('full', used >= quota);
+  }
+
+  function showQuotaWall(used, quota) {
+    const wall = document.getElementById('quota-wall');
+    document.getElementById('quota-wall-counter').textContent = `${used} / ${quota} analyses utilisées`;
+    wall.classList.add('visible');
+    // Hide interactive zones
+    document.getElementById('photo-area').style.display     = 'none';
+    document.getElementById('initial-btns').style.display   = 'none';
+    document.getElementById('context-panel').classList.remove('visible');
+    document.getElementById('results-panel').classList.remove('visible');
+  }
+
+  loadPhotoQuota();
+
   // ── Photo IA — state ─────────────────────────────────────────
   const fileInput   = document.getElementById('photo-file');
   const analyzeBtn  = document.getElementById('analyze-btn');
@@ -1123,8 +1282,20 @@ document.addEventListener('DOMContentLoaded', () => {
       renderAliments();
       document.getElementById('context-panel').classList.remove('visible');
       document.getElementById('results-panel').classList.add('visible');
+      // Update banner count after successful analysis
+      if (_quotaData && !_quotaData.is_premium) {
+        _quotaData.used = (_quotaData.used || 0) + 1;
+        renderQuotaBanner(_quotaData);
+      }
     } catch (err) {
-      toast(err.message, 'error');
+      if (err.status === 429) {
+        const used  = err.data?.used  ?? (_quotaData?.quota ?? 3);
+        const quota = err.data?.quota ?? (_quotaData?.quota ?? 3);
+        showQuotaWall(used, quota);
+        if (_quotaData) { _quotaData.used = used; renderQuotaBanner(_quotaData); }
+      } else {
+        toast(err.message, 'error');
+      }
     } finally {
       hideScanOverlay();
       setLoading(analyzeBtn, false);

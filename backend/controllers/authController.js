@@ -123,7 +123,7 @@ async function login(req, res) {
     // ── Utilisateur test hardcodé ─────────────────────────────
     if (email === TEST_EMAIL && password === TEST_PASSWORD) {
       const testToken = jwt.sign(
-        { id: '00000000-0000-0000-0000-000000000002', email: TEST_EMAIL, isAdmin: false, isTest: true },
+        { id: '00000000-0000-0000-0000-000000000002', email: TEST_EMAIL, isAdmin: false, isTest: true, is_premium: false, photo_quota_daily: 3 },
         process.env.JWT_SECRET,
         { expiresIn: '12h' }
       );
@@ -135,7 +135,9 @@ async function login(req, res) {
           isAdmin: false,
           isTest: true,
           onboarding_done: true,
-          username: 'User Test'
+          username: 'User Test',
+          is_premium: false,
+          photo_quota_daily: 3
         }
       });
     }
@@ -143,7 +145,7 @@ async function login(req, res) {
     // ── Compte test onboarding ────────────────────────────────
     if (email === TEST_ONBOARDING_EMAIL && password === TEST_ONBOARDING_PASSWORD) {
       const testOnboardingToken = jwt.sign(
-        { id: '00000000-0000-0000-0000-000000000003', email: TEST_ONBOARDING_EMAIL, isAdmin: false, isTest: true },
+        { id: '00000000-0000-0000-0000-000000000003', email: TEST_ONBOARDING_EMAIL, isAdmin: false, isTest: true, is_premium: false, photo_quota_daily: 3 },
         process.env.JWT_SECRET,
         { expiresIn: '12h' }
       );
@@ -155,7 +157,9 @@ async function login(req, res) {
           isAdmin: false,
           isTest: true,
           onboarding_done: false,
-          username: 'Test Onboarding'
+          username: 'Test Onboarding',
+          is_premium: false,
+          photo_quota_daily: 3
         }
       });
     }
