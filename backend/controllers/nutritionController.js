@@ -564,6 +564,101 @@ async function getIngredients(req, res) {
   }
 }
 
+// GET /api/nutrition/ingredients/suggestions?selected=Poulet,Riz
+async function getIngredientSuggestions(req, res) {
+  try {
+    const DEFAULTS = [
+      'Poulet filet', 'Riz basmati cru', 'Œuf entier', 'Saumon',
+      'Banane', 'Flocons avoine', 'Brocolis', 'Thon en boite',
+      'Patate douce', 'Yaourt grec nature', 'Tomate', 'Avocat',
+    ];
+
+    const rawSelected = req.query.selected || '';
+    const selected = rawSelected
+      .split(',')
+      .map(s => s.trim())
+      .filter(Boolean);
+
+    if (!selected.length) {
+      return res.json({ suggestions: DEFAULTS });
+    }
+
+    // Fetch all ingredients with categories
+    const { data, error } = await supabaseAdmin
+      .from('ingredients')
+      .select('nom, categorie')
+      .not('categorie', 'in', '("autres","graisses")');
+
+    if (error) return res.status(500).json({ error: 'Erreur serveur' });
+
+    const all = data || [];
+
+    // Build a map nom→categorie (lowercase categorie for matching)
+    const nomToCat = {};
+    all.forEach(r => { nomToCat[r.nom] = (r.categorie || '').toLowerCase(); });
+
+    // Determine the categories of selected ingredients
+    const selectedCats = new Set(
+      selected.map(n => nomToCat[n]).filter(Boolean)
+    );
+
+    // Category group helpers
+    const isViande   = c => ['viandes', 'viande', 'poissons', 'poisson', 'proteines', 'protéines'].includes(c);
+    const isFeculent = c => ['féculents', 'feculents', 'féculent', 'feculent', 'céréales', 'cereales'].includes(c);
+    const isLegume   = c => ['légumes', 'legumes', 'légume', 'legume'].includes(c);
+    const isFruit    = c => ['fruits', 'fruit'].includes(c);
+    const isLaitier  = c => ['laitiers', 'laitier', 'produits laitiers', 'dairy'].includes(c);
+
+    const hasViande   = [...selectedCats].some(isViande);
+    const hasFeculent = [...selectedCats].some(isFeculent);
+    const hasLaitier  = [...selectedCats].some(isLaitier);
+    const hasFruit    = [...selectedCats].some(isFruit);
+
+    // Build target categories based on co-selection rules
+    const targetCats = new Set();
+
+    if (hasViande) {
+      // Viande → autres viandes + légumes + féculents
+      all.forEach(r => { if (isViande(r.categorie?.toLowerCase()))   targetCats.add(r.nom); });
+      all.forEach(r => { if (isLegume(r.categorie?.toLowerCase()))   targetCats.add(r.nom); });
+      all.forEach(r => { if (isFeculent(r.categorie?.toLowerCase())) targetCats.add(r.nom); });
+    }
+    if (hasFeculent) {
+      // Féculent → autres féculents + viandes + légumes
+      all.forEach(r => { if (isFeculent(r.categorie?.toLowerCase())) targetCats.add(r.nom); });
+      all.forEach(r => { if (isViande(r.categorie?.toLowerCase()))   targetCats.add(r.nom); });
+      all.forEach(r => { if (isLegume(r.categorie?.toLowerCase()))   targetCats.add(r.nom); });
+    }
+    if (hasLaitier) {
+      // Laitier → fruits
+      all.forEach(r => { if (isFruit(r.categorie?.toLowerCase()))   targetCats.add(r.nom); });
+    }
+    if (hasFruit) {
+      // Fruit → autres fruits
+      all.forEach(r => { if (isFruit(r.categorie?.toLowerCase()))   targetCats.add(r.nom); });
+    }
+
+    // Fallback : same categories as selected if no rule matched
+    if (!targetCats.size) {
+      selectedCats.forEach(cat => {
+        all.forEach(r => {
+          if ((r.categorie || '').toLowerCase() === cat) targetCats.add(r.nom);
+        });
+      });
+    }
+
+    // Exclude already selected, deduplicate, shuffle slightly, cap at 6
+    const suggestions = [...targetCats]
+      .filter(n => !selected.includes(n))
+      .sort(() => Math.random() - 0.5)
+      .slice(0, 6);
+
+    res.json({ suggestions });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
 // POST /api/nutrition/recipes/:id/photo
 async function uploadRecipePhoto(req, res) {
   try {
@@ -594,4 +689,4 @@ async function uploadRecipePhoto(req, res) {
   }
 }
 
-module.exports = { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, generatePersonalizedRecipes, getIngredients, uploadRecipePhoto };
+module.exports = { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, generatePersonalizedRecipes, getIngredients, getIngredientSuggestions, uploadRecipePhoto };

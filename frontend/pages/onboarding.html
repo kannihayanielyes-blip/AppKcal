@@ -10,6 +10,91 @@
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/css/main.css">
   <link rel="stylesheet" href="/css/auth.css">
+  <style>
+    /* ── Validation states ── */
+    .ob-error {
+      font-size: .78rem;
+      font-weight: 500;
+      color: #E53E3E;
+      margin-top: 5px;
+      min-height: 0;
+      max-height: 0;
+      overflow: hidden;
+      opacity: 0;
+      transition: max-height .2s ease, opacity .2s ease;
+    }
+    .ob-error.visible {
+      max-height: 40px;
+      opacity: 1;
+    }
+    .form-input.ob-invalid {
+      border-color: #E53E3E !important;
+      background: #fff8f8 !important;
+      box-shadow: 0 0 0 3px rgba(229,62,62,.12) !important;
+    }
+    .form-input.ob-valid {
+      border-color: #6B7C45 !important;
+      background: #f8fbf5 !important;
+      box-shadow: 0 0 0 3px rgba(107,124,69,.1) !important;
+    }
+    #next-btn:disabled {
+      opacity: .45;
+      cursor: not-allowed;
+    }
+
+    /* ── Food grid — smart chips ── */
+    .foods-step-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 4px;
+    }
+    .foods-step-header > div { flex: 1; min-width: 0; }
+    .food-counter {
+      flex-shrink: 0;
+      font-size: .74rem;
+      font-weight: 700;
+      color: #6B7C45;
+      background: rgba(107,124,69,.12);
+      border: 1px solid rgba(107,124,69,.2);
+      padding: 4px 10px;
+      border-radius: 99px;
+      white-space: nowrap;
+      margin-top: 4px;
+      transition: background .2s, color .2s;
+    }
+    .food-counter.has-selection {
+      background: #6B7C45;
+      color: #fff;
+      border-color: transparent;
+    }
+
+    /* Chip entrance animation */
+    @keyframes chip-in {
+      from { opacity: 0; transform: translateY(5px) scale(.92); }
+      to   { opacity: 1; transform: translateY(0)  scale(1); }
+    }
+    @keyframes chip-out {
+      from { opacity: 1; max-width: 180px; padding: 7px 14px; margin: 3px; }
+      to   { opacity: 0; max-width: 0;     padding: 7px 0;    margin: 0; }
+    }
+    .food-chip--new {
+      animation: chip-in 150ms ease both;
+      border-style: dashed !important;
+      opacity: .85;
+    }
+    .food-chip--settling {
+      border-style: solid !important;
+      opacity: 1;
+      transition: border-style .2s, opacity .2s;
+    }
+    .food-chip--removing {
+      animation: chip-out 150ms ease forwards;
+      pointer-events: none;
+      overflow: hidden;
+    }
+  </style>
 </head>
 <body data-page="onboarding">
 
@@ -64,6 +149,7 @@
       <div class="form-group">
         <label class="form-label" for="ob-username">Prénom</label>
         <input class="form-input" type="text" id="ob-username" placeholder="Ton prénom" autocomplete="given-name" style="font-size:1.1rem">
+        <div class="ob-error" id="error-username"></div>
       </div>
     </div>
 
@@ -83,6 +169,7 @@
       <div class="form-group">
         <label class="form-label" for="ob-birthdate">Date de naissance</label>
         <input class="form-input" type="date" id="ob-birthdate" max="2010-01-01">
+        <div class="ob-error" id="error-birthdate"></div>
       </div>
     </div>
 
@@ -95,10 +182,12 @@
       <div class="form-group">
         <label class="form-label" for="ob-height">Taille (cm)</label>
         <input class="form-input" type="number" id="ob-height" placeholder="175" min="100" max="250" inputmode="numeric">
+        <div class="ob-error" id="error-height"></div>
       </div>
       <div class="form-group">
         <label class="form-label" for="ob-weight">Poids actuel (kg)</label>
         <input class="form-input" type="number" id="ob-weight" placeholder="70" min="30" max="300" inputmode="decimal" step="0.1">
+        <div class="ob-error" id="error-weight"></div>
       </div>
     </div>
 
@@ -278,18 +367,24 @@
 
     <!-- Step 7: Aliments préférés -->
     <div class="onboarding-step" data-step="7">
-      <div>
-        <h2 class="onboarding-step-title">Tes aliments préférés</h2>
-        <p class="onboarding-step-subtitle">On adapte tes recettes à ce que tu aimes</p>
+      <div class="foods-step-header">
+        <div>
+          <h2 class="onboarding-step-title">Commence par tes bases</h2>
+          <p class="onboarding-step-subtitle">Sélectionne ce que tu aimes, on te propose la suite</p>
+        </div>
+        <div class="food-counter" id="liked-counter">0 sélectionné</div>
       </div>
       <div class="food-chips-grid" id="liked-foods-grid"></div>
     </div>
 
     <!-- Step 8: Aliments à éviter -->
     <div class="onboarding-step" data-step="8">
-      <div>
-        <h2 class="onboarding-step-title">Ce que tu n'aimes pas</h2>
-        <p class="onboarding-step-subtitle">On les exclut de tes suggestions</p>
+      <div class="foods-step-header">
+        <div>
+          <h2 class="onboarding-step-title">Ce que tu n'aimes pas</h2>
+          <p class="onboarding-step-subtitle">Les aliments aimés sont grisés et non modifiables</p>
+        </div>
+        <div class="food-counter" id="disliked-counter">0 sélectionné</div>
       </div>
       <div class="food-chips-grid" id="disliked-foods-grid"></div>
     </div>
@@ -318,9 +413,12 @@ window.initOnboarding = function() {
   const stepSequenceGuided   = [0, 1, 2, 3, 4, 5, 6, 7, 8];
   const stepSequenceAdvanced = [0, 1, 2, 3, '4-adv', 5, 6, 7, 8];
 
-  const FALLBACK_INGREDIENTS = ['Poulet', 'Riz', 'Œufs', 'Thon', 'Avocat', 'Banane', 'Fromage blanc', 'Avoine'];
-  let availableIngredients = [];
-  let ingredientsLoaded = false;
+  const UNIVERSAL_CHIPS = [
+    'Poulet filet', 'Riz basmati cru', 'Œuf entier', 'Saumon',
+    'Banane', 'Flocons avoine', 'Brocolis', 'Thon en boite',
+    'Patate douce', 'Yaourt grec nature', 'Tomate', 'Avocat',
+  ];
+  const MAX_CHIPS = 30;
 
   const dots    = document.querySelectorAll('.onboarding-step-dot');
   const steps   = document.querySelectorAll('.onboarding-step');
@@ -340,82 +438,139 @@ window.initOnboarding = function() {
     });
   }
 
-  function refreshDislikedChips() {
-    document.querySelectorAll('#disliked-foods-grid .food-chip').forEach(chip => {
-      const isLiked = data.liked_foods.includes(chip.dataset.food);
-      if (isLiked) {
+  // ── Smart food grid engine ────────────────────────────────────
+  function createFoodGrid({ gridId, selectedList, excludeList, counterId }) {
+    const grid      = document.getElementById(gridId);
+    const counterEl = document.getElementById(counterId);
+    let shownNames  = [];   // ordered list of visible chip names
+    let fetchTimer  = null;
+
+    function updateCounter() {
+      const n = selectedList.length;
+      counterEl.textContent = n === 0 ? '0 sélectionné' : `${n} sélectionné${n > 1 ? 's' : ''}`;
+      counterEl.classList.toggle('has-selection', n > 0);
+    }
+
+    function makeChip(name, isNew) {
+      const chip = document.createElement('div');
+      chip.className = 'food-chip' + (isNew ? ' food-chip--new' : '');
+      chip.dataset.food = name;
+      chip.textContent  = name;
+
+      const excluded = excludeList && excludeList.includes(name);
+      if (excluded) {
         chip.classList.add('food-chip--disabled');
-        chip.classList.remove('food-chip--selected');
-        const idx = data.disliked_foods.indexOf(chip.dataset.food);
-        if (idx !== -1) data.disliked_foods.splice(idx, 1);
-      } else {
-        chip.classList.remove('food-chip--disabled');
+      } else if (selectedList.includes(name)) {
+        chip.classList.add('food-chip--selected');
       }
+
+      if (!excluded) {
+        chip.addEventListener('click', () => {
+          const wasSelected = chip.classList.contains('food-chip--selected');
+          chip.classList.toggle('food-chip--selected');
+          const idx = selectedList.indexOf(name);
+          if (wasSelected) {
+            if (idx !== -1) selectedList.splice(idx, 1);
+          } else {
+            selectedList.push(name);
+            clearTimeout(fetchTimer);
+            fetchTimer = setTimeout(fetchAndAdd, 250);
+          }
+          updateCounter();
+        });
+      }
+      return chip;
+    }
+
+    function evict(needed) {
+      let freed = 0;
+      const toEvict = [];
+      for (let i = 0; i < shownNames.length && freed < needed; i++) {
+        if (!selectedList.includes(shownNames[i])) { toEvict.push(shownNames[i]); freed++; }
+      }
+      toEvict.forEach(name => {
+        shownNames = shownNames.filter(n => n !== name);
+        const el = grid.querySelector(`.food-chip[data-food="${name.replace(/"/g, '\\"')}"]`);
+        if (el) { el.classList.add('food-chip--removing'); setTimeout(() => el.remove(), 155); }
+      });
+    }
+
+    function addChips(names) {
+      const toAdd = names.filter(n => !shownNames.includes(n));
+      if (!toAdd.length) return;
+      const overflow = (shownNames.length + toAdd.length) - MAX_CHIPS;
+      if (overflow > 0) evict(overflow);
+      toAdd.forEach((name, i) => {
+        shownNames.push(name);
+        const chip = makeChip(name, true);
+        setTimeout(() => {
+          grid.appendChild(chip);
+          // Settle into normal style after animation
+          setTimeout(() => {
+            chip.classList.remove('food-chip--new');
+            chip.classList.add('food-chip--settling');
+            requestAnimationFrame(() => chip.classList.remove('food-chip--settling'));
+          }, 200);
+        }, i * 55);
+      });
+    }
+
+    async function fetchAndAdd() {
+      if (!selectedList.length) return;
+      try {
+        const q   = selectedList.map(encodeURIComponent).join(',');
+        const res = await request('GET', `/nutrition/ingredients/suggestions?selected=${q}`);
+        addChips(res?.suggestions || []);
+      } catch (_) { /* silencieux */ }
+    }
+
+    function init() {
+      grid.innerHTML = '';
+      shownNames = [...UNIVERSAL_CHIPS];
+      UNIVERSAL_CHIPS.forEach(name => grid.appendChild(makeChip(name, false)));
+      updateCounter();
+    }
+
+    return { init };
+  }
+
+  let likedGrid, dislikedGrid;
+
+  function initLikedGrid() {
+    likedGrid = createFoodGrid({
+      gridId:       'liked-foods-grid',
+      selectedList: data.liked_foods,
+      excludeList:  null,
+      counterId:    'liked-counter',
     });
+    likedGrid.init();
   }
 
-  function renderLikedGrid() {
-    const grid = document.getElementById('liked-foods-grid');
-    grid.innerHTML = '';
-    for (const name of availableIngredients) {
-      const chip = document.createElement('div');
-      chip.className = 'food-chip';
-      chip.dataset.food = name;
-      chip.textContent = name;
-      if (data.liked_foods.includes(name)) chip.classList.add('food-chip--selected');
-      chip.addEventListener('click', () => {
-        chip.classList.toggle('food-chip--selected');
-        const idx = data.liked_foods.indexOf(name);
-        if (idx === -1) data.liked_foods.push(name); else data.liked_foods.splice(idx, 1);
-      });
-      grid.appendChild(chip);
-    }
+  function initDislikedGrid() {
+    dislikedGrid = createFoodGrid({
+      gridId:       'disliked-foods-grid',
+      selectedList: data.disliked_foods,
+      excludeList:  data.liked_foods,
+      counterId:    'disliked-counter',
+    });
+    dislikedGrid.init();
   }
-
-  function renderDislikedGrid() {
-    const grid = document.getElementById('disliked-foods-grid');
-    grid.innerHTML = '';
-    for (const name of availableIngredients) {
-      const chip = document.createElement('div');
-      chip.className = 'food-chip';
-      chip.dataset.food = name;
-      chip.textContent = name;
-      if (data.disliked_foods.includes(name)) chip.classList.add('food-chip--selected');
-      chip.addEventListener('click', () => {
-        if (chip.classList.contains('food-chip--disabled')) return;
-        chip.classList.toggle('food-chip--selected');
-        const idx = data.disliked_foods.indexOf(name);
-        if (idx === -1) data.disliked_foods.push(name); else data.disliked_foods.splice(idx, 1);
-      });
-      grid.appendChild(chip);
-    }
-    refreshDislikedChips();
-  }
-
-  async function loadIngredients() {
-    if (ingredientsLoaded) return;
-    const grid = document.getElementById('liked-foods-grid');
-    grid.innerHTML = '<div class="chips-loader"><span></span><span></span><span></span></div>';
-    nextBtn.disabled = true;
-    try {
-      const res = await request('GET', '/nutrition/ingredients');
-      const list = Array.isArray(res) ? res : (res?.ingredients || []);
-      availableIngredients = list.length > 0 ? list : FALLBACK_INGREDIENTS;
-    } catch (_) {
-      availableIngredients = FALLBACK_INGREDIENTS;
-    }
-    ingredientsLoaded = true;
-    nextBtn.disabled = false;
-    renderLikedGrid();
-  }
+  // ─────────────────────────────────────────────────────────────
 
   function showStep(stepId) {
     steps.forEach(s => s.classList.remove('active'));
     const el = document.querySelector(`.onboarding-step[data-step="${stepId}"]`);
     if (el) el.classList.add('active');
 
-    if (stepId === 7) loadIngredients();
-    if (stepId === 8) renderDislikedGrid();
+    if (stepId === 7) initLikedGrid();
+    if (stepId === 8) initDislikedGrid();
+
+    // Gestion du bouton selon l'étape
+    if (stepId === 1) {
+      nextBtn.disabled = !document.getElementById('ob-username').value.trim();
+    } else {
+      nextBtn.disabled = false;
+    }
 
     const pos = getSeq().indexOf(stepId);
     backBtn.style.display = pos === 0 ? 'none' : 'flex';
@@ -470,20 +625,95 @@ window.initOnboarding = function() {
     if (pos > 0) { currentStep = seq[pos - 1]; showStep(currentStep); }
   });
 
+  // ── Inline validation helpers ────────────────────────────────
+  function setFieldState(input, errorEl, message) {
+    if (message) {
+      input.classList.add('ob-invalid');
+      input.classList.remove('ob-valid');
+      errorEl.textContent = message;
+      errorEl.classList.add('visible');
+      return false;
+    } else {
+      input.classList.remove('ob-invalid');
+      if (input.value.trim()) input.classList.add('ob-valid');
+      errorEl.textContent = '';
+      errorEl.classList.remove('visible');
+      return true;
+    }
+  }
+
+  function validateUsername() {
+    const input = document.getElementById('ob-username');
+    const err   = document.getElementById('error-username');
+    const val   = input.value.trim();
+    if (!val)                    return setFieldState(input, err, 'Le prénom est requis');
+    if (val.length < 2)          return setFieldState(input, err, 'Minimum 2 caractères');
+    if (val.length > 30)         return setFieldState(input, err, 'Maximum 30 caractères');
+    if (!/^[a-zA-Z0-9_\-. àâäéèêëïîôöùûüç]+$/i.test(val))
+                                  return setFieldState(input, err, 'Caractères non autorisés');
+    return setFieldState(input, err, null);
+  }
+
+  function validateBirthdate() {
+    const input = document.getElementById('ob-birthdate');
+    const err   = document.getElementById('error-birthdate');
+    const val   = input.value;
+    if (!val) return setFieldState(input, err, 'La date de naissance est requise');
+    const age = (Date.now() - new Date(val).getTime()) / (365.25 * 86400000);
+    if (age < 13)  return setFieldState(input, err, 'Tu dois avoir entre 13 et 100 ans');
+    if (age > 100) return setFieldState(input, err, 'Date de naissance invalide');
+    return setFieldState(input, err, null);
+  }
+
+  function validateHeight() {
+    const input = document.getElementById('ob-height');
+    const err   = document.getElementById('error-height');
+    const val   = Number(input.value);
+    if (!input.value) return setFieldState(input, err, 'La taille est requise');
+    if (val < 100 || val > 250) return setFieldState(input, err, 'Ta taille doit être entre 100 et 250 cm');
+    return setFieldState(input, err, null);
+  }
+
+  function validateWeight() {
+    const input = document.getElementById('ob-weight');
+    const err   = document.getElementById('error-weight');
+    const val   = Number(input.value);
+    if (!input.value) return setFieldState(input, err, 'Le poids est requis');
+    if (val < 30 || val > 300) return setFieldState(input, err, 'Ton poids doit être entre 30 et 300 kg');
+    return setFieldState(input, err, null);
+  }
+
+  // Blur listeners
+  document.getElementById('ob-username') ?.addEventListener('blur',   validateUsername);
+  document.getElementById('ob-birthdate')?.addEventListener('blur',   validateBirthdate);
+  document.getElementById('ob-height')   ?.addEventListener('blur',   validateHeight);
+  document.getElementById('ob-weight')   ?.addEventListener('blur',   validateWeight);
+
+  // Live button state for step 1
+  document.getElementById('ob-username')?.addEventListener('input', () => {
+    if (currentStep !== 1) return;
+    nextBtn.disabled = !validateUsername();
+  });
+
+  // ─────────────────────────────────────────────────────────────
+
   nextBtn?.addEventListener('click', async () => {
     if (currentStep === 1) {
-      data.username = document.getElementById('ob-username')?.value.trim();
-      if (!data.username) { toast('Entre ton prénom', 'error'); return; }
+      if (!validateUsername()) return;
+      data.username = document.getElementById('ob-username').value.trim();
     }
     if (currentStep === 2) {
-      data.birthdate = document.getElementById('ob-birthdate')?.value;
-      if (!data.birthdate) { toast('Entre ta date de naissance', 'error'); return; }
-      if (!data.gender)    { toast('Sélectionne ton genre', 'error'); return; }
+      const bdOk = validateBirthdate();
+      if (!bdOk) return;
+      if (!data.gender) { toast('Sélectionne ton genre', 'error'); return; }
+      data.birthdate = document.getElementById('ob-birthdate').value;
     }
     if (currentStep === 3) {
-      data.height_cm = document.getElementById('ob-height')?.value;
-      data.weight_kg = document.getElementById('ob-weight')?.value;
-      if (!data.height_cm || !data.weight_kg) { toast('Entre ta taille et ton poids', 'error'); return; }
+      const hOk = validateHeight();
+      const wOk = validateWeight();
+      if (!hOk || !wOk) return;
+      data.height_cm = document.getElementById('ob-height').value;
+      data.weight_kg = document.getElementById('ob-weight').value;
     }
     if (currentStep === 4 && !data.goal) { toast('Choisis ton objectif', 'error'); return; }
     if (currentStep === '4-adv') {

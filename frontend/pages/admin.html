@@ -280,6 +280,44 @@
     .panel-email { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
     .panel-close { background: none; border: none; cursor: pointer; color: var(--text-muted); font-size: 20px; line-height: 1; padding: 2px; transition: color var(--transition); }
     .panel-close:hover { color: var(--text-primary); }
+
+    /* ── Username edit ── */
+    .panel-name-row { display: flex; align-items: center; gap: 6px; }
+    .panel-edit-btn {
+      background: none; border: none; cursor: pointer; padding: 2px 4px;
+      font-size: 13px; opacity: 0.45; transition: opacity .15s;
+      line-height: 1; flex-shrink: 0;
+    }
+    .panel-edit-btn:hover { opacity: 1; }
+    .panel-name-edit {
+      display: none; align-items: center; gap: 6px; margin-top: 3px;
+    }
+    .panel-name-edit.visible { display: flex; }
+    .panel-name-input {
+      flex: 1; min-width: 0;
+      padding: 5px 9px;
+      border: 1.5px solid var(--accent-primary, #6B7C45);
+      border-radius: 6px;
+      font-size: 13px; font-weight: 600;
+      background: var(--bg-main); color: var(--text-primary);
+      outline: none; font-family: inherit;
+      transition: box-shadow .15s;
+    }
+    .panel-name-input:focus { box-shadow: 0 0 0 3px rgba(107,124,69,.18); }
+    .panel-save-btn {
+      padding: 5px 10px; border: none; border-radius: 6px;
+      background: var(--accent-primary, #6B7C45); color: #fff;
+      font-size: 12px; font-weight: 700; cursor: pointer;
+      font-family: inherit; white-space: nowrap; transition: opacity .15s;
+    }
+    .panel-save-btn:hover { opacity: .85; }
+    .panel-save-btn:disabled { opacity: .5; cursor: not-allowed; }
+    .panel-cancel-btn {
+      padding: 5px 8px; border: 1.5px solid var(--border); border-radius: 6px;
+      background: none; color: var(--text-secondary);
+      font-size: 12px; cursor: pointer; font-family: inherit; transition: opacity .15s;
+    }
+    .panel-cancel-btn:hover { opacity: .7; }
     .panel-body { padding: 16px 20px; display: flex; flex-direction: column; gap: 20px; }
     .panel-section-label { font-size: 10px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.08em; margin-bottom: 10px; }
     .panel-stat-row { display: flex; gap: 8px; flex-wrap: wrap; }
@@ -551,7 +589,15 @@
               <div class="panel-header">
                 <div class="panel-avatar" id="panel-avatar">?</div>
                 <div class="panel-info">
-                  <div class="panel-name" id="panel-name">—</div>
+                  <div class="panel-name-row">
+                    <div class="panel-name" id="panel-name">—</div>
+                    <button class="panel-edit-btn" id="panel-edit-btn" title="Modifier le nom" aria-label="Modifier le nom">✏️</button>
+                  </div>
+                  <div class="panel-name-edit" id="panel-name-edit">
+                    <input class="panel-name-input" type="text" id="panel-name-input" maxlength="50" autocomplete="off">
+                    <button class="panel-save-btn" id="panel-save-btn">Sauvegarder</button>
+                    <button class="panel-cancel-btn" id="panel-cancel-btn">Annuler</button>
+                  </div>
                   <div class="panel-email" id="panel-email">—</div>
                 </div>
                 <button class="panel-close" id="panel-close-btn">×</button>
@@ -1003,6 +1049,56 @@ async function openUserPanel(userId) {
     document.getElementById('panel-avatar').innerHTML = av;
     document.getElementById('panel-name').textContent  = p.username || p.email || '—';
     document.getElementById('panel-email').textContent = p.email || '';
+
+    // ── Username inline edit ──────────────────────────────────
+    const editBtn    = document.getElementById('panel-edit-btn');
+    const editRow    = document.getElementById('panel-name-edit');
+    const nameEl     = document.getElementById('panel-name');
+    const nameInput  = document.getElementById('panel-name-input');
+    const saveBtn    = document.getElementById('panel-save-btn');
+    const cancelBtn  = document.getElementById('panel-cancel-btn');
+
+    function openEdit() {
+      nameInput.value = nameEl.textContent === '—' ? '' : nameEl.textContent;
+      editRow.classList.add('visible');
+      editBtn.style.display = 'none';
+      nameEl.style.display  = 'none';
+      nameInput.focus();
+      nameInput.select();
+    }
+
+    function closeEdit() {
+      editRow.classList.remove('visible');
+      editBtn.style.display = '';
+      nameEl.style.display  = '';
+    }
+
+    editBtn.onclick = openEdit;
+    cancelBtn.onclick = closeEdit;
+
+    saveBtn.onclick = async () => {
+      const newName = nameInput.value.trim();
+      if (!newName) return;
+      saveBtn.disabled = true;
+      try {
+        await adminFetch(`/admin/users/${userId}`, { method: 'PATCH', body: { username: newName } });
+        nameEl.textContent = newName;
+        closeEdit();
+        showToast('Nom modifié ✅', 'success');
+        // Refresh la table en arrière-plan
+        loadUsers(usersPage, currentSearchQ);
+      } catch(e) {
+        showToast(e.message, 'error');
+      } finally {
+        saveBtn.disabled = false;
+      }
+    };
+
+    nameInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter')  saveBtn.click();
+      if (e.key === 'Escape') closeEdit();
+    });
+    // ─────────────────────────────────────────────────────────
     const liked    = p.liked_foods    || [];
     const disliked = p.disliked_foods || [];
     document.getElementById('panel-body').innerHTML = `

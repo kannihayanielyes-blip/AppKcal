@@ -821,6 +821,168 @@
       transition: opacity .25s ease;
     }
     .scan-text.fade { opacity: 0; }
+
+    /* ── Barcode product card ── */
+    @keyframes bc-slide-up {
+      from { transform: translateY(20px); opacity: 0; }
+      to   { transform: translateY(0);    opacity: 1; }
+    }
+    .barcode-card {
+      margin: 14px 20px 0;
+      display: none;
+      animation: bc-slide-up .28s cubic-bezier(.22,.68,0,1.2) both;
+    }
+    .barcode-card.visible { display: block; }
+
+    .bc-product-header {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      box-shadow: var(--shadow-sm);
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .bc-product-img {
+      width: 72px;
+      height: 72px;
+      border-radius: var(--radius-md);
+      background: var(--cream);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      flex-shrink: 0;
+      overflow: hidden;
+    }
+    .bc-product-img img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+    }
+    .bc-product-meta { flex: 1; min-width: 0; }
+    .bc-product-name {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.3;
+      margin-bottom: 10px;
+    }
+    .bc-nutriscore {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .04em;
+    }
+    .bc-nutriscore__badge {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1rem;
+      font-weight: 900;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .bc-macros {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 10px;
+    }
+    .bc-macros__label {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .05em;
+      margin-bottom: 10px;
+    }
+    .bc-macros__grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+    }
+    .bc-macro-pill {
+      text-align: center;
+      padding: 8px 4px;
+      border-radius: var(--radius-sm);
+      background: var(--cream);
+    }
+    .bc-macro-pill__val {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text);
+      line-height: 1.1;
+    }
+    .bc-macro-pill__lbl {
+      font-size: .62rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+      font-weight: 500;
+    }
+    .bc-macro-pill--kcal .bc-macro-pill__val { color: var(--olive); }
+
+    .bc-qty-section {
+      background: var(--white);
+      border-radius: var(--radius-lg);
+      padding: 14px 16px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 10px;
+    }
+    .bc-qty-label {
+      font-size: .78rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+    .bc-qty-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .bc-qty-row .form-input {
+      flex: 1;
+      text-align: center;
+      font-size: 1.1rem;
+      font-weight: 700;
+    }
+    .bc-qty-unit {
+      font-size: .9rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    .bc-qty-preview {
+      font-size: .82rem;
+      color: var(--olive);
+      font-weight: 600;
+      margin-top: 6px;
+    }
+
+    /* ── Barcode not found ── */
+    .barcode-not-found {
+      margin: 20px 20px 0;
+      background: var(--white);
+      border-radius: var(--radius-xl);
+      padding: 32px 24px 28px;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+      display: none;
+      animation: bc-slide-up .28s ease both;
+    }
+    .barcode-not-found.visible { display: block; }
+    .bnf-icon  { font-size: 2.8rem; margin-bottom: 14px; }
+    .bnf-title { font-size: 1.1rem; font-weight: 800; margin-bottom: 6px; }
+    .bnf-sub   { font-size: .88rem; color: var(--text-muted); margin-bottom: 24px; line-height: 1.5; }
   </style>
 </head>
 <body>
@@ -877,6 +1039,47 @@
       <button class="btn btn--ghost" style="flex:1" onclick="resetPhoto()">↩ Refaire</button>
       <button class="btn btn--primary" style="flex:2" id="analyze-btn">🔍 Analyser</button>
     </div>
+  </div>
+
+  <!-- Barcode product card -->
+  <div class="barcode-card" id="barcode-card">
+    <div class="bc-product-header">
+      <div class="bc-product-img" id="bc-img">📦</div>
+      <div class="bc-product-meta">
+        <div class="bc-product-name" id="bc-name">—</div>
+        <div class="bc-nutriscore" id="bc-nutriscore"></div>
+      </div>
+    </div>
+    <div class="bc-macros">
+      <div class="bc-macros__label">Pour 100 g</div>
+      <div class="bc-macros__grid" id="bc-macros-grid"></div>
+    </div>
+    <div class="bc-qty-section">
+      <div class="bc-qty-label">Quantité consommée</div>
+      <div class="bc-qty-row">
+        <input class="form-input" type="number" id="bc-qty" value="100" min="1" max="5000" inputmode="numeric">
+        <span class="bc-qty-unit">g</span>
+      </div>
+      <div class="bc-qty-preview" id="bc-qty-preview"></div>
+    </div>
+    <div class="meal-type-row" id="bc-meal-type-row">
+      <button class="meal-type-btn active" data-meal="breakfast">🌅 Matin</button>
+      <button class="meal-type-btn" data-meal="lunch">☀️ Midi</button>
+      <button class="meal-type-btn" data-meal="dinner">🌙 Soir</button>
+      <button class="meal-type-btn" data-meal="snack">🍎 Snack</button>
+    </div>
+    <button class="btn btn--primary btn--full mb-16" id="bc-add-btn">✓ Ajouter au journal</button>
+    <button class="btn btn--ghost btn--full" onclick="resetPhoto()" style="font-size:.88rem">↩ Rescanner</button>
+    <div style="height:16px"></div>
+  </div>
+
+  <!-- Barcode not found -->
+  <div class="barcode-not-found" id="barcode-not-found">
+    <div class="bnf-icon">😕</div>
+    <div class="bnf-title">Produit non trouvé dans la base</div>
+    <div class="bnf-sub">Tu peux l'ajouter manuellement</div>
+    <button class="btn btn--outline btn--full" id="bnf-manual-btn">✏️ Ajouter manuellement</button>
+    <button class="btn btn--ghost btn--full" onclick="resetPhoto()" style="font-size:.88rem;margin-top:8px">↩ Rescanner</button>
   </div>
 
   <!-- ÉTAPE 2 : résultats éditables -->
@@ -1230,9 +1433,12 @@ document.addEventListener('DOMContentLoaded', () => {
     photoArea.classList.remove('has-image');
     photoArea.style.cursor = 'pointer';
     photoArea.onclick = () => triggerPhoto();
+    photoArea.style.display = '';
     initialBtns.style.display = 'flex';
     document.getElementById('context-panel').classList.remove('visible');
     document.getElementById('results-panel').classList.remove('visible');
+    document.getElementById('barcode-card').classList.remove('visible');
+    document.getElementById('barcode-not-found').classList.remove('visible');
     alimentsData = [];
   };
 
@@ -1253,35 +1459,35 @@ document.addEventListener('DOMContentLoaded', () => {
     try {
       const result = await API.photo.analyze(formData);
 
-      // ── DEBUG : affiche la réponse brute dans la console ──────
-      console.log('[Photo IA] Réponse brute API :', result);
-      if (result.aliments) {
-        console.log('[Photo IA] Premier aliment :', result.aliments[0]);
-        console.log('[Photo IA] Clés du premier aliment :', Object.keys(result.aliments[0] || {}));
+      document.getElementById('context-panel').classList.remove('visible');
+
+      if (result.type === 'barcode') {
+        showBarcodeCard(result.product);
+      } else if (result.type === 'barcode_not_found') {
+        showBarcodeNotFound(result.barcode);
+      } else {
+        // ── food (type: 'food' ou ancien format sans type) ──────
+        console.log('[Photo IA] Réponse brute API :', result);
+        alimentsData = (result.aliments || []).map(a => {
+          const q     = a.quantite_g  || 1;
+          const kcal  = a.calories    || 0;
+          const prot  = a.proteines_g || 0;
+          const carbs = a.glucides_g  || 0;
+          const fat   = a.lipides_g   || 0;
+          return {
+            nom:         a.nom,
+            quantite_g:  q,
+            kcal_per_g:  kcal  / q,
+            prot_per_g:  prot  / q,
+            carbs_per_g: carbs / q,
+            fat_per_g:   fat   / q,
+            source:      a.source || 'estimation_ia',
+          };
+        });
+        renderAliments();
+        document.getElementById('results-panel').classList.add('visible');
       }
 
-      // Le backend normalise déjà vers proteines_g / glucides_g / lipides_g
-      alimentsData = (result.aliments || []).map(a => {
-        const q    = a.quantite_g  || 1;
-        const kcal = a.calories    || 0;
-        const prot = a.proteines_g || 0;
-        const carbs = a.glucides_g || 0;
-        const fat   = a.lipides_g  || 0;
-
-        console.log(`[Photo IA] "${a.nom}" q=${q}g kcal=${kcal} prot=${prot} carbs=${carbs} fat=${fat} source=${a.source}`);
-        return {
-          nom:        a.nom,
-          quantite_g: q,
-          kcal_per_g:  kcal  / q,
-          prot_per_g:  prot  / q,
-          carbs_per_g: carbs / q,
-          fat_per_g:   fat   / q,
-          source:     a.source || 'estimation_ia',
-        };
-      });
-      renderAliments();
-      document.getElementById('context-panel').classList.remove('visible');
-      document.getElementById('results-panel').classList.add('visible');
       // Update banner count after successful analysis
       if (_quotaData && !_quotaData.is_premium) {
         _quotaData.used = (_quotaData.used || 0) + 1;
@@ -1301,6 +1507,123 @@ document.addEventListener('DOMContentLoaded', () => {
       setLoading(analyzeBtn, false);
     }
   });
+
+  // ── Barcode card ────────────────────────────────────────────
+  const NUTRISCORE_STYLES = {
+    a: { bg: '#1a7340', color: '#fff' },
+    b: { bg: '#56aa1c', color: '#fff' },
+    c: { bg: '#e8c21a', color: '#333' },
+    d: { bg: '#e87c1e', color: '#fff' },
+    e: { bg: '#e63e11', color: '#fff' },
+  };
+
+  let _bcProduct = null;
+  let _bcMeal    = 'snack';
+
+  function showBarcodeCard(product) {
+    _bcProduct = product;
+    document.getElementById('barcode-card').classList.add('visible');
+    document.getElementById('barcode-not-found').classList.remove('visible');
+
+    // Image
+    const imgEl = document.getElementById('bc-img');
+    if (product.image_url) {
+      imgEl.innerHTML = `<img src="${product.image_url}" alt="" onerror="this.parentElement.textContent='📦'">`;
+    } else {
+      imgEl.textContent = '📦';
+    }
+
+    // Name
+    document.getElementById('bc-name').textContent = product.name || 'Produit';
+
+    // Nutriscore
+    const nsEl = document.getElementById('bc-nutriscore');
+    const grade = (product.nutriscore || '').toLowerCase();
+    const ns = NUTRISCORE_STYLES[grade];
+    nsEl.innerHTML = ns
+      ? `<span class="bc-nutriscore__badge" style="background:${ns.bg};color:${ns.color}">${grade.toUpperCase()}</span> Nutri-Score`
+      : `<span style="color:var(--text-muted);font-size:.75rem">Nutri-Score N/A</span>`;
+
+    // Macros per 100g
+    const grid = document.getElementById('bc-macros-grid');
+    const fmt  = v => v != null ? Math.round(v) : '—';
+    grid.innerHTML = `
+      <div class="bc-macro-pill bc-macro-pill--kcal">
+        <div class="bc-macro-pill__val">${fmt(product.kcal_per_100g)}</div>
+        <div class="bc-macro-pill__lbl">kcal</div>
+      </div>
+      <div class="bc-macro-pill">
+        <div class="bc-macro-pill__val">${fmt(product.protein_per_100g)}<span style="font-size:.6rem;font-weight:500">g</span></div>
+        <div class="bc-macro-pill__lbl">protéines</div>
+      </div>
+      <div class="bc-macro-pill">
+        <div class="bc-macro-pill__val">${fmt(product.carbs_per_100g)}<span style="font-size:.6rem;font-weight:500">g</span></div>
+        <div class="bc-macro-pill__lbl">glucides</div>
+      </div>
+      <div class="bc-macro-pill">
+        <div class="bc-macro-pill__val">${fmt(product.fat_per_100g)}<span style="font-size:.6rem;font-weight:500">g</span></div>
+        <div class="bc-macro-pill__lbl">lipides</div>
+      </div>`;
+
+    updateBcPreview();
+  }
+
+  function updateBcPreview() {
+    if (!_bcProduct) return;
+    const qty   = Number(document.getElementById('bc-qty').value) || 100;
+    const ratio = qty / 100;
+    const kcal  = Math.round((_bcProduct.kcal_per_100g || 0) * ratio);
+    const prot  = Math.round((_bcProduct.protein_per_100g || 0) * ratio * 10) / 10;
+    const carbs = Math.round((_bcProduct.carbs_per_100g  || 0) * ratio * 10) / 10;
+    const fat   = Math.round((_bcProduct.fat_per_100g    || 0) * ratio * 10) / 10;
+    document.getElementById('bc-qty-preview').textContent =
+      `→ ${kcal} kcal · P ${prot}g · G ${carbs}g · L ${fat}g`;
+  }
+
+  document.getElementById('bc-qty').addEventListener('input', updateBcPreview);
+
+  document.getElementById('bc-meal-type-row').addEventListener('click', e => {
+    const btn = e.target.closest('.meal-type-btn');
+    if (!btn) return;
+    document.querySelectorAll('#bc-meal-type-row .meal-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    _bcMeal = btn.dataset.meal;
+  });
+
+  document.getElementById('bc-add-btn').addEventListener('click', async () => {
+    if (!_bcProduct) return;
+    const addBtn = document.getElementById('bc-add-btn');
+    const qty    = Number(document.getElementById('bc-qty').value) || 100;
+    const ratio  = qty / 100;
+    setLoading(addBtn, true);
+    try {
+      await API.nutrition.addLog({
+        name:      _bcProduct.name,
+        kcal:      Math.round((_bcProduct.kcal_per_100g    || 0) * ratio),
+        protein_g: Math.round((_bcProduct.protein_per_100g || 0) * ratio * 10) / 10,
+        carbs_g:   Math.round((_bcProduct.carbs_per_100g   || 0) * ratio * 10) / 10,
+        fat_g:     Math.round((_bcProduct.fat_per_100g     || 0) * ratio * 10) / 10,
+        meal_type: _bcMeal,
+      });
+      toast('Produit ajouté au journal ✅', 'success');
+      setTimeout(() => window.location.href = '/pages/dashboard.html', 900);
+    } catch (err) {
+      toast(err.message, 'error');
+      setLoading(addBtn, false);
+    }
+  });
+
+  function showBarcodeNotFound(barcode) {
+    document.getElementById('barcode-not-found').classList.add('visible');
+    document.getElementById('barcode-card').classList.remove('visible');
+  }
+
+  document.getElementById('bnf-manual-btn').addEventListener('click', () => {
+    document.getElementById('barcode-not-found').classList.remove('visible');
+    document.getElementById('results-panel').classList.add('visible');
+    showAddAlimentForm();
+  });
+  // ─────────────────────────────────────────────────────────────
 
   // ── Meal type ───────────────────────────────────────────────
   document.getElementById('meal-type-row').addEventListener('click', e => {

@@ -1,7 +1,7 @@
 const router = require('express').Router();
 const multer = require('multer');
 const {
-  getStats, getUsers, searchUsers, getUserFull, deleteUser,
+  getStats, getUsers, searchUsers, getUserFull, patchUser, deleteUser,
   getInvites, createInvite, deleteInvite,
   getRecipes, createRecipe, updateRecipe, toggleRecipeVisibility, deleteRecipe,
   getIngredients, createIngredient, updateIngredient, deleteIngredient
@@ -27,6 +27,7 @@ router.get('/stats', getStats);
 router.get('/users/search', searchUsers);   // avant /users/:id pour éviter conflit
 router.get('/users', getUsers);
 router.get('/users/:id/full', getUserFull);
+router.patch('/users/:id', patchUser);
 router.delete('/users/:id', deleteUser);
 router.get('/invites', getInvites);
 router.post('/invites', createInvite);

@@ -70,7 +70,8 @@ async function analyzePhoto(req, res) {
     }
     // ─────────────────────────────────────────────────────────────────────
 
-    let prompt = `Tu es un expert en nutrition. Analyse cette photo de repas avec précision.
+    let prompt = `Avant tout, regarde si l'image contient un code-barres ou un QR code bien visible. Si oui, réponds UNIQUEMENT avec : {"type":"barcode","barcode":"XXXXXXXXX"} (remplace XXXXXXXXX par la valeur du code).
+Si c'est de la nourriture sans code-barres visible, tu es un expert en nutrition. Analyse cette photo de repas avec précision.
 Réponds uniquement en français. Les noms des aliments doivent être en français (ex: 'Poulet' pas 'Chicken', 'Saumon' pas 'Salmon', 'Haricots verts' pas 'Green beans').`;
     if (description) prompt += `\nL'utilisateur précise : ${description}`;
     if (weight_g)    prompt += `\nLe poids total de l'assiette est d'environ ${weight_g}g`;
@@ -78,7 +79,7 @@ Réponds uniquement en français. Les noms des aliments doivent être en frança
 Identifie chaque aliment séparément. Utilise des noms simples et génériques sans adjectifs (ex: 'Poulet' pas 'Poulet grillé', 'Riz' pas 'Riz safrané', 'Haricots verts' pas 'Haricots verts à l'ail').
 Pour chaque aliment, estime la quantité avec soin en tenant compte de la taille de l'assiette visible. En cas de doute, légèrement surestimer plutôt que sous-estimer.
 Estime également les macronutriments pour chaque aliment.
-Retourne UNIQUEMENT du JSON valide : {"items":[{"name":"...","quantity_g":0,"kcal":0,"proteines_g":0,"lipides_g":0,"glucides_g":0,"fibres_g":0}]}`;
+Retourne UNIQUEMENT du JSON valide : {"type":"food","items":[{"name":"...","quantity_g":0,"kcal":0,"proteines_g":0,"lipides_g":0,"glucides_g":0,"fibres_g":0}]}`;
 
     const response = await openai.chat.completions.create({
       model: 'gpt-4o-mini',
@@ -123,6 +124,42 @@ Retourne UNIQUEMENT du JSON valide : {"items":[{"name":"...","quantity_g":0,"kca
         raw: content
       });
     }
+
+    // ── Code-barres détecté par GPT ───────────────────────────────────────
+    if (nutrition.type === 'barcode') {
+      const barcode = String(nutrition.barcode || '').trim();
+      if (!barcode) {
+        return res.status(422).json({ error: 'Code-barres non lisible' });
+      }
+      try {
+        const offRes  = await fetch(`https://world.openfoodfacts.org/api/v0/product/${encodeURIComponent(barcode)}.json`);
+        const offData = await offRes.json();
+
+        if (offData.status === 0) {
+          return res.json({ type: 'barcode_not_found', barcode });
+        }
+
+        const p = offData.product   || {};
+        const n = p.nutriments      || {};
+        return res.json({
+          type: 'barcode',
+          product: {
+            name:             p.product_name_fr || p.product_name || 'Produit inconnu',
+            kcal_per_100g:    n['energy-kcal_100g']   ?? null,
+            protein_per_100g: n['proteins_100g']       ?? null,
+            carbs_per_100g:   n['carbohydrates_100g']  ?? null,
+            fat_per_100g:     n['fat_100g']             ?? null,
+            nutriscore:       p.nutriscore_grade        ?? null,
+            image_url:        p.image_url               ?? null,
+            barcode,
+          },
+        });
+      } catch (offErr) {
+        console.error('[photoAnalyze] OpenFoodFacts error:', offErr.message);
+        return res.status(502).json({ error: 'Impossible de récupérer les infos produit' });
+      }
+    }
+    // ─────────────────────────────────────────────────────────────────────
 
     // ── BDD lookup + macro calculation ────────────────────────────────────
     const rawItems = nutrition.items || nutrition.aliments || nutrition.foods || [];

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const multer = require('multer');
-const { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, getIngredients, uploadRecipePhoto } = require('../controllers/nutritionController');
+const { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, getIngredients, getIngredientSuggestions, uploadRecipePhoto } = require('../controllers/nutritionController');
 const { requireAuth } = require('../middleware/auth');
 
 const photoUpload = multer({
@@ -14,6 +14,7 @@ const photoUpload = multer({
 });
 
 // Routes publiques (avant requireAuth)
+router.get('/ingredients/suggestions', getIngredientSuggestions);
 router.get('/ingredients', getIngredients);
 
 router.use(requireAuth);

@@ -241,6 +241,61 @@ async function onboarding(req, res) {
 
     const profileMode = mode === 'advanced' ? 'advanced' : 'guided';
 
+    // ── Validation des champs ─────────────────────────────────
+
+    // USERNAME
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'Le pseudo est requis' });
+    }
+    const usernameTrimmed = username.trim();
+    if (usernameTrimmed.length < 2 || usernameTrimmed.length > 30) {
+      return res.status(400).json({ error: 'Le pseudo doit faire entre 2 et 30 caractères' });
+    }
+    if (!/^[a-zA-Z0-9_\-. àâäéèêëïîôöùûüç]+$/i.test(usernameTrimmed)) {
+      return res.status(400).json({ error: 'Le pseudo contient des caractères non autorisés' });
+    }
+    const BLOCKED_WORDS = ['bite', 'con', 'merde', 'putain', 'salope', 'connard', 'fdp', 'pd', 'niquer', 'baiser'];
+    if (BLOCKED_WORDS.some(w => usernameTrimmed.toLowerCase().includes(w))) {
+      return res.status(400).json({ error: "Ce nom n'est pas autorisé" });
+    }
+
+    // MORPHOLOGIE
+    if (height_cm !== undefined && height_cm !== null && height_cm !== '') {
+      const h = Number(height_cm);
+      if (isNaN(h) || h < 100 || h > 250) {
+        return res.status(400).json({ error: 'La taille doit être entre 100 et 250 cm' });
+      }
+    }
+    if (weight_kg !== undefined && weight_kg !== null && weight_kg !== '') {
+      const w = Number(weight_kg);
+      if (isNaN(w) || w < 30 || w > 300) {
+        return res.status(400).json({ error: 'Le poids doit être entre 30 et 300 kg' });
+      }
+    }
+    if (birthdate) {
+      const ageDays = (Date.now() - new Date(birthdate).getTime()) / 86400000;
+      const ageYears = ageDays / 365.25;
+      if (ageYears < 13) {
+        return res.status(400).json({ error: 'Tu dois avoir au moins 13 ans pour utiliser AppKcal' });
+      }
+      if (ageYears > 100) {
+        return res.status(400).json({ error: 'Date de naissance invalide' });
+      }
+    }
+
+    // OBJECTIF
+    const VALID_GOALS = ['bulk', 'cut', 'rebalance', 'maintain'];
+    if (goal && !VALID_GOALS.includes(goal)) {
+      return res.status(400).json({ error: `Objectif invalide. Valeurs autorisées : ${VALID_GOALS.join(', ')}` });
+    }
+
+    // NIVEAU D'ACTIVITÉ
+    const VALID_ACTIVITY = ['sedentary', 'light', 'moderate', 'active', 'very_active'];
+    if (activity_level && !VALID_ACTIVITY.includes(activity_level)) {
+      return res.status(400).json({ error: `Niveau d'activité invalide. Valeurs autorisées : ${VALID_ACTIVITY.join(', ')}` });
+    }
+
+    // ─────────────────────────────────────────────────────────
 
     let daily_kcal_target;
     let advancedFields = {};

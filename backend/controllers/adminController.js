@@ -128,6 +128,32 @@ async function getUserFull(req, res) {
   }
 }
 
+// PATCH /api/admin/users/:id
+async function patchUser(req, res) {
+  try {
+    const { id } = req.params;
+    const { username } = req.body;
+    if (!username || typeof username !== 'string') {
+      return res.status(400).json({ error: 'Username requis' });
+    }
+    const trimmed = username.trim();
+    if (trimmed.length < 3 || trimmed.length > 30) {
+      return res.status(400).json({ error: 'Username doit faire entre 3 et 30 caractères' });
+    }
+    if (!/^[a-zA-Z0-9_\-. ]+$/.test(trimmed)) {
+      return res.status(400).json({ error: 'Username contient des caractères non autorisés' });
+    }
+    const { error } = await supabaseAdmin
+      .from('profiles')
+      .update({ username: trimmed, updated_at: new Date().toISOString() })
+      .eq('id', id);
+    if (error) return res.status(400).json({ error: error.message });
+    res.json({ success: true, username: trimmed });
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
 // DELETE /api/admin/users/:id
 async function deleteUser(req, res) {
   try {
@@ -428,7 +454,7 @@ function generateCode() {
 }
 
 module.exports = {
-  getStats, getUsers, searchUsers, getUserFull, deleteUser,
+  getStats, getUsers, searchUsers, getUserFull, patchUser, deleteUser,
   getInvites, createInvite, deleteInvite,
   getRecipes, createRecipe, updateRecipe, toggleRecipeVisibility, deleteRecipe,
   getIngredients, createIngredient, updateIngredient, deleteIngredient
