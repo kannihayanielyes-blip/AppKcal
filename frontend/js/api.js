@@ -86,10 +86,36 @@ function handleTestRequest(method, path, body) {
     return { logs: todayLogs, totals };
   }
 
-  // Ajouter un log nutrition
+  // Ajouter un log nutrition (single)
   if (path === '/nutrition/log' && method === 'POST') {
     const logs = JSON.parse(localStorage.getItem('kcal_test_logs') || '[]');
     const entry = { id: 'tl_' + Date.now(), date: today, ...body };
+    logs.push(entry);
+    localStorage.setItem('kcal_test_logs', JSON.stringify(logs));
+    return entry;
+  }
+
+  // Ajouter un repas complet (meal log)
+  if (path === '/nutrition/log/meal' && method === 'POST') {
+    const logs  = JSON.parse(localStorage.getItem('kcal_test_logs') || '[]');
+    const items = body.items || [];
+    const total = items.reduce((a, it) => ({
+      kcal: a.kcal + (it.kcal || 0),
+      prot: a.prot + (it.proteines_g || 0),
+      carbs: a.carbs + (it.glucides_g || 0),
+      fat:  a.fat  + (it.lipides_g  || 0),
+      qty:  a.qty  + (it.quantity_g || 0),
+    }), { kcal: 0, prot: 0, carbs: 0, fat: 0, qty: 0 });
+    const entry = {
+      id: 'tl_' + Date.now(), date: today,
+      name: body.name || 'Repas',
+      kcal: Math.round(total.kcal),
+      protein_g: Math.round(total.prot * 10) / 10,
+      carbs_g:   Math.round(total.carbs * 10) / 10,
+      fat_g:     Math.round(total.fat  * 10) / 10,
+      quantity_g: Math.round(total.qty),
+      meal_type: body.meal_type || 'snack',
+    };
     logs.push(entry);
     localStorage.setItem('kcal_test_logs', JSON.stringify(logs));
     return entry;
@@ -266,6 +292,7 @@ const API = {
     week:        (start) => request('GET', `/nutrition/week${start ? '?start='+start : ''}`),
     suggestions: () => request('GET', '/nutrition/suggestions'),
     addLog:      (body) => request('POST', '/nutrition/log', body),
+    addMealLog:  (body) => request('POST', '/nutrition/log/meal', body),
     updateLog:   (id, body) => request('PUT', `/nutrition/log/${id}`, body),
     deleteLog:   (id) => request('DELETE', `/nutrition/log/${id}`),
     recipes: Object.assign(

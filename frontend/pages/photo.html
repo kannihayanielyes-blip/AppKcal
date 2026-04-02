@@ -1076,6 +1076,43 @@
       margin-top: 6px;
     }
 
+    /* ── Meal selector (résultats) ── */
+    .meal-selector {
+      background: var(--cream);
+      border-radius: 13px;
+      padding: 12px 14px 14px;
+      margin-bottom: 14px;
+    }
+    .meal-selector__label {
+      font-size: .68rem;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .08em;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+    }
+    .meal-selector .meal-type-row { margin-bottom: 0; }
+    .meal-type-btn {
+      padding: 7px 13px;
+      border-radius: 99px;
+      border: 1.5px solid var(--cream-d);
+      background: var(--white);
+      font-size: .8rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      transition: all .18s;
+      flex-shrink: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: inherit;
+    }
+    .meal-type-btn.active {
+      border-color: var(--olive);
+      background: var(--olive);
+      color: var(--white);
+    }
+    .meal-type-btn:active { opacity: .8; }
+
     /* ── Barcode not found ── */
     .barcode-not-found {
       margin: 20px 20px 0;
@@ -1192,12 +1229,15 @@
 
   <!-- ÉTAPE 2 : résultats éditables -->
   <div class="results-panel" id="results-panel">
-    <!-- Type de repas -->
-    <div class="meal-type-row" id="meal-type-row">
-      <button class="meal-type-btn active" data-meal="breakfast">🌅 Matin</button>
-      <button class="meal-type-btn" data-meal="lunch">☀️ Midi</button>
-      <button class="meal-type-btn" data-meal="dinner">🌙 Soir</button>
-      <button class="meal-type-btn" data-meal="snack">🍎 Snack</button>
+    <!-- Sélecteur de repas (auto-détecté selon l'heure) -->
+    <div class="meal-selector">
+      <div class="meal-selector__label">Ajouter en tant que…</div>
+      <div class="meal-type-row" id="meal-type-row">
+        <button class="meal-type-btn" data-meal="breakfast">🌅 Matin</button>
+        <button class="meal-type-btn" data-meal="lunch">☀️ Midi</button>
+        <button class="meal-type-btn" data-meal="dinner">🌙 Soir</button>
+        <button class="meal-type-btn" data-meal="snack">🍎 Snack</button>
+      </div>
     </div>
 
     <!-- Liste aliments éditables -->
@@ -1228,7 +1268,7 @@
     </div>
 
     <!-- Actions -->
-    <button class="btn btn--primary btn--full mb-16" id="confirm-btn">✓ Confirmer et ajouter au journal</button>
+    <button class="btn btn--primary btn--full mb-16" id="confirm-btn">✓ Ajouter au journal</button>
     <button class="btn btn--ghost btn--full" onclick="redoAnalysis()" style="font-size:.88rem">↩ Refaire l'analyse</button>
     <div style="height:16px"></div>
   </div>
@@ -1479,7 +1519,38 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // alimentsData : [{nom, quantite_g, kcal_per_g, prot_per_g, carbs_per_g, fat_per_g}]
   let alimentsData = [];
-  let selectedMeal = 'snack';
+
+  // ── Meal type helpers ────────────────────────────────────────
+  const MEAL_LABELS = {
+    breakfast: 'Petit-déjeuner',
+    lunch:     'Déjeuner',
+    dinner:    'Dîner',
+    snack:     'Snack',
+  };
+
+  function detectMealType() {
+    const h = new Date().getHours();
+    if (h >= 5  && h < 10) return 'breakfast';
+    if (h >= 10 && h < 14) return 'lunch';
+    if (h >= 14 && h < 17) return 'snack';
+    if (h >= 17 && h < 22) return 'dinner';
+    return 'snack';
+  }
+
+  function getMealLabel(type) {
+    return MEAL_LABELS[type] || type;
+  }
+
+  function setMealType(type) {
+    selectedMeal = type;
+    document.querySelectorAll('#meal-type-row .meal-type-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.meal === type);
+    });
+    const label = getMealLabel(type);
+    document.getElementById('confirm-btn').textContent = `✓ Ajouter — ${label}`;
+  }
+
+  let selectedMeal = detectMealType();
 
   // ── Scan overlay ─────────────────────────────────────────────
   const SCAN_MESSAGES = [
@@ -1593,6 +1664,7 @@ document.addEventListener('DOMContentLoaded', () => {
           };
         });
         renderAliments();
+        setMealType(detectMealType());
         document.getElementById('results-panel').classList.add('visible');
       }
 
@@ -1737,10 +1809,11 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('meal-type-row').addEventListener('click', e => {
     const btn = e.target.closest('.meal-type-btn');
     if (!btn) return;
-    document.querySelectorAll('.meal-type-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active');
-    selectedMeal = btn.dataset.meal;
+    setMealType(btn.dataset.meal);
   });
+
+  // Init pill + button label on load
+  setMealType(selectedMeal);
 
   // ── Render aliments list ────────────────────────────────────
   function renderAliments() {
@@ -1914,20 +1987,34 @@ document.addEventListener('DOMContentLoaded', () => {
     const btn = document.getElementById('confirm-btn');
     setLoading(btn, true);
     try {
-      // Add each aliment as a separate log entry
-      for (const item of alimentsData) {
+      const items = alimentsData.map(item => {
         const c = computeItem(item);
-        await API.nutrition.addLog({
-          name:      item.nom,
-          kcal:      c.kcal,
-          protein_g: c.prot,
-          carbs_g:   c.carbs,
-          fat_g:     c.fat,
-          meal_type: selectedMeal,
-        });
-      }
-      toast(`${alimentsData.length} aliment${alimentsData.length > 1 ? 's' : ''} ajouté${alimentsData.length > 1 ? 's' : ''} au journal !`, 'success');
-      setTimeout(() => window.location.href = '/pages/dashboard.html', 1000);
+        return {
+          name:        item.nom,
+          kcal:        c.kcal,
+          proteines_g: c.prot,
+          glucides_g:  c.carbs,
+          lipides_g:   c.fat,
+          quantity_g:  item.quantite_g,
+        };
+      });
+
+      // Nom auto : "Déjeuner — Pain, Pâtes, ..." (max 3 aliments)
+      const label    = getMealLabel(selectedMeal);
+      const names3   = alimentsData.slice(0, 3).map(a => a.nom).join(', ');
+      const ellipsis = alimentsData.length > 3 ? ', …' : '';
+      const mealName = `${label} — ${names3}${ellipsis}`;
+
+      const totalKcal = items.reduce((s, it) => s + (it.kcal || 0), 0);
+
+      await API.nutrition.addMealLog({
+        name:      mealName,
+        items,
+        meal_type: selectedMeal,
+      });
+
+      toast(`✅ ${label} ajouté — ${Math.round(totalKcal)} kcal`, 'success');
+      setTimeout(() => window.location.href = '/pages/dashboard.html', 1500);
     } catch (err) {
       toast(err.message, 'error');
       setLoading(btn, false);

@@ -1,6 +1,6 @@
 const router = require('express').Router();
 const multer = require('multer');
-const { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, getIngredients, getIngredientSuggestions, uploadRecipePhoto } = require('../controllers/nutritionController');
+const { getToday, getWeek, addLog, addMealLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, getIngredients, getIngredientSuggestions, uploadRecipePhoto } = require('../controllers/nutritionController');
 const { requireAuth } = require('../middleware/auth');
 
 const photoUpload = multer({
@@ -29,6 +29,7 @@ router.post('/recipes', createUserRecipe);
 router.post('/recipes/:id/photo', photoUpload.single('photo'), uploadRecipePhoto);
 router.delete('/recipes/:id', deleteUserRecipe);
 router.get('/smart-suggestions', getSmartSuggestions);
+router.post('/log/meal', addMealLog);
 router.post('/log', addLog);
 router.put('/log/:id', updateLog);
 router.delete('/log/:id', deleteLog);

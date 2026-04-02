@@ -689,4 +689,72 @@ async function uploadRecipePhoto(req, res) {
   }
 }
 
-module.exports = { getToday, getWeek, addLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, generatePersonalizedRecipes, getIngredients, getIngredientSuggestions, uploadRecipePhoto };
+// POST /api/nutrition/log/meal
+async function addMealLog(req, res) {
+  try {
+    const { name, items, meal_type } = req.body;
+
+    if (!Array.isArray(items) || items.length === 0) {
+      return res.status(400).json({ error: 'items requis (tableau non vide)' });
+    }
+
+    // Somme des macros
+    let totalKcal = 0, totalProt = 0, totalCarbs = 0, totalFat = 0, totalQty = 0;
+    for (const it of items) {
+      totalKcal  += Number(it.kcal)        || 0;
+      totalProt  += Number(it.proteines_g) || 0;
+      totalCarbs += Number(it.glucides_g)  || 0;
+      totalFat   += Number(it.lipides_g)   || 0;
+      totalQty   += Number(it.quantity_g)  || 0;
+    }
+
+    if (totalKcal <= 0) {
+      return res.status(400).json({ error: 'Total kcal doit être positif' });
+    }
+
+    // Nom auto : préfixe fourni (ou "Repas") — liste des aliments
+    const itemNames = items.map(it => it.name).filter(Boolean).join(', ');
+    const mealName  = name
+      ? `${name} — ${itemNames}`
+      : itemNames || 'Repas';
+
+    if (HARDCODED_IDS.includes(req.user.id)) {
+      return res.status(201).json({
+        id: '00000000-0000-0000-0000-' + String(Date.now()).padStart(12, '0'),
+        user_id: req.user.id,
+        name: mealName,
+        kcal: Math.round(totalKcal),
+        protein_g: Math.round(totalProt * 10) / 10,
+        carbs_g:   Math.round(totalCarbs * 10) / 10,
+        fat_g:     Math.round(totalFat   * 10) / 10,
+        quantity_g: Math.round(totalQty),
+        meal_type: meal_type || 'snack',
+        date: new Date().toISOString().split('T')[0],
+      });
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('nutrition_logs')
+      .insert({
+        user_id:    req.user.id,
+        name:       mealName,
+        kcal:       Math.round(totalKcal),
+        protein_g:  Math.round(totalProt  * 10) / 10,
+        carbs_g:    Math.round(totalCarbs * 10) / 10,
+        fat_g:      Math.round(totalFat   * 10) / 10,
+        quantity_g: Math.round(totalQty),
+        meal_type:  meal_type || 'snack',
+        date:       new Date().toISOString().split('T')[0],
+        created_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (error) return res.status(400).json({ error: error.message });
+    res.status(201).json(data);
+  } catch (err) {
+    res.status(500).json({ error: 'Erreur serveur' });
+  }
+}
+
+module.exports = { getToday, getWeek, addLog, addMealLog, deleteLog, updateLog, getSuggestions, getRecipes, getUserRecipes, createUserRecipe, deleteUserRecipe, getSmartSuggestions, searchAliment, generatePersonalizedRecipes, getIngredients, getIngredientSuggestions, uploadRecipePhoto };
