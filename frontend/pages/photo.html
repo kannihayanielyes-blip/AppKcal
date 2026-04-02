@@ -584,129 +584,237 @@
       color: var(--white);
     }
 
-    .aliment-row {
-      background: var(--white);
-      border-radius: var(--radius-md);
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      box-shadow: var(--shadow-sm);
+    /* ── Aliment rows (redesigned) ── */
+    @keyframes item-enter {
+      from { opacity: 0; transform: translateY(10px) scale(.98); }
+      to   { opacity: 1; transform: translateY(0) scale(1); }
     }
-    .aliment-row__top {
+
+    .aliment-row {
+      display: flex;
+      border-radius: 14px;
+      margin-bottom: 10px;
+      background: var(--white);
+      box-shadow: 0 1px 4px rgba(0,0,0,.06), 0 0 0 1px rgba(0,0,0,.04);
+      overflow: hidden;
+      animation: item-enter .22s ease both;
+    }
+
+    /* Left accent bar — green for BDD, amber for IA */
+    .ar-accent {
+      width: 4px;
+      flex-shrink: 0;
+    }
+    .ar-accent--bdd { background: #22c55e; }
+    .ar-accent--ia  { background: #f59e0b; }
+
+    .ar-body {
+      flex: 1;
+      padding: 12px 13px 12px 12px;
+      min-width: 0;
+    }
+
+    /* Header: name (tap-to-edit) + delete */
+    .ar-header {
       display: flex;
       align-items: center;
-      gap: 8px;
-      margin-bottom: 8px;
+      gap: 6px;
+      margin-bottom: 10px;
     }
-    .aliment-name-input {
+
+    .ar-name-text {
       flex: 1;
-      padding: 8px 12px;
-      border: 2px solid var(--cream-d);
-      border-radius: var(--radius-sm);
-      font-size: .88rem;
-      font-weight: 600;
+      font-size: .9rem;
+      font-weight: 700;
+      color: var(--text);
+      cursor: text;
+      padding: 4px 7px;
+      border-radius: 7px;
+      border: 1.5px solid transparent;
+      transition: border-color .15s, background .15s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      line-height: 1.35;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+    .ar-name-text:active { border-color: var(--cream-d); background: var(--cream); }
+    .ar-edit-hint {
+      font-size: .65rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      opacity: 0;
+      transition: opacity .15s;
+      pointer-events: none;
+    }
+    .ar-name-text:hover .ar-edit-hint { opacity: 1; }
+
+    .ar-name-input {
+      flex: 1;
+      display: none;
+      padding: 4px 8px;
+      border: 1.5px solid var(--olive);
+      border-radius: 7px;
+      font-size: .9rem;
+      font-weight: 700;
       outline: none;
       background: var(--white);
-      transition: border-color .2s;
+      color: var(--text);
+      font-family: inherit;
     }
-    .aliment-name-input:focus { border-color: var(--olive); }
+
+    /* Old class kept for JS compat */
+    .aliment-name-input { display: none; }
+
     .aliment-delete {
-      width: 32px;
-      height: 32px;
+      width: 26px;
+      height: 26px;
       border-radius: 50%;
-      background: var(--cream-d);
-      color: var(--text-muted);
-      font-size: .9rem;
+      background: #fff0f0;
+      color: #e05252;
+      font-size: .72rem;
       display: flex;
       align-items: center;
       justify-content: center;
       flex-shrink: 0;
-      transition: all .15s;
+      border: none;
+      cursor: pointer;
+      transition: background .12s, transform .1s;
+      -webkit-tap-highlight-color: transparent;
     }
-    .aliment-delete:hover { background: #ffe0e0; color: var(--danger); }
+    .aliment-delete:active { transform: scale(.82); background: #ffd7d7; }
 
-    .aliment-row__bottom {
+    /* Controls row: qty stepper + macro readout */
+    .ar-controls {
       display: flex;
       align-items: center;
       gap: 10px;
     }
-    .aliment-qty-wrap {
+
+    .qty-stepper {
       display: flex;
       align-items: center;
-      gap: 4px;
+      gap: 3px;
       background: var(--cream);
-      border-radius: var(--radius-sm);
-      padding: 6px 10px;
+      border-radius: 10px;
+      padding: 3px 4px;
+      flex-shrink: 0;
     }
+    .qty-btn {
+      width: 26px;
+      height: 26px;
+      border-radius: 7px;
+      background: var(--white);
+      color: var(--text);
+      font-size: 1rem;
+      font-weight: 700;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 1px 2px rgba(0,0,0,.07);
+      transition: transform .1s, background .1s;
+      -webkit-tap-highlight-color: transparent;
+      flex-shrink: 0;
+    }
+    .qty-btn:active { transform: scale(.82); background: var(--cream-d); }
+
     .aliment-qty-input {
-      width: 56px;
+      width: 44px;
       border: none;
       background: transparent;
       font-size: .88rem;
-      font-weight: 700;
+      font-weight: 800;
       outline: none;
-      text-align: right;
+      text-align: center;
+      color: var(--text);
+      -moz-appearance: textfield;
+      font-family: inherit;
     }
-    .aliment-qty-unit { font-size: .78rem; color: var(--text-muted); }
-    .aliment-kcal-display {
-      font-size: .92rem;
-      font-weight: 700;
-      color: var(--olive);
-    }
-    .aliment-macros-display {
-      font-size: .75rem;
+    .aliment-qty-input::-webkit-outer-spin-button,
+    .aliment-qty-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+    .aliment-qty-unit {
+      font-size: .7rem;
       color: var(--text-muted);
-      margin-left: auto;
-    }
-    .aliment-source-badge {
-      display: inline-block;
-      font-size: .68rem;
       font-weight: 600;
-      padding: 2px 8px;
-      border-radius: 20px;
-      margin-top: 6px;
-    }
-    .badge-bdd {
-      background: #d1fae5;
-      color: #065f46;
-    }
-    .badge-ia {
-      background: #ffedd5;
-      color: #92400e;
+      padding-right: 2px;
     }
 
-    /* Manual add form */
+    .ar-macro-info {
+      flex: 1;
+      text-align: right;
+      min-width: 0;
+    }
+    .aliment-kcal-display {
+      font-size: .95rem;
+      font-weight: 800;
+      color: var(--olive);
+      line-height: 1.1;
+    }
+    .aliment-macros-display {
+      font-size: .7rem;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    /* Legacy — hidden, source now shown via left bar */
+    .aliment-source-badge, .badge-bdd, .badge-ia { display: none; }
+
+    /* ── Add aliment form ── */
     .add-aliment-form {
-      background: var(--white);
-      border-radius: var(--radius-md);
+      background: var(--cream);
+      border-radius: 14px;
       padding: 14px;
-      margin-bottom: 8px;
-      box-shadow: var(--shadow-sm);
+      margin-bottom: 10px;
+      border: 1.5px dashed #b5c490;
       display: none;
+      animation: item-enter .2s ease both;
     }
     .add-aliment-form.visible { display: block; }
     .add-aliment-row {
       display: grid;
-      grid-template-columns: 1fr 72px 72px;
+      grid-template-columns: 1fr 66px 66px;
       gap: 8px;
       margin-bottom: 10px;
     }
 
-    /* Total bar */
+    /* ── Add aliment CTA button ── */
+    #show-add-aliment-btn {
+      border: 1.5px dashed var(--cream-d);
+      border-radius: 14px;
+      padding: 11px;
+      font-size: .88rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      background: transparent;
+      cursor: pointer;
+      transition: border-color .15s, color .15s, background .15s;
+      width: 100%;
+      font-family: inherit;
+      -webkit-tap-highlight-color: transparent;
+    }
+    #show-add-aliment-btn:active { border-color: var(--olive); color: var(--olive); background: #f6f9f0; }
+
+    /* ── Total bar ── */
     .result-totals {
       background: var(--olive);
-      border-radius: var(--radius-md);
-      padding: 14px 16px;
+      border-radius: 14px;
+      padding: 16px 18px;
       margin-bottom: 14px;
       color: var(--white);
     }
     .result-totals__kcal {
-      font-size: 1.6rem;
-      font-weight: 800;
+      font-size: 1.8rem;
+      font-weight: 900;
+      letter-spacing: -.02em;
       margin-bottom: 4px;
     }
     .result-totals__macros {
       font-size: .82rem;
       opacity: .88;
+      letter-spacing: .01em;
     }
 
     /* ── Scan overlay ──────────────────────────────────────────── */
@@ -1639,43 +1747,89 @@ document.addEventListener('DOMContentLoaded', () => {
     const list = document.getElementById('aliments-list');
     list.innerHTML = alimentsData.map((item, i) => {
       const c = computeItem(item);
+      const isBdd = item.source === 'bdd';
       return `
-        <div class="aliment-row" data-idx="${i}">
-          <div class="aliment-row__top">
-            <input class="aliment-name-input" value="${escHtml(item.nom)}" data-idx="${i}" placeholder="Aliment">
-            <button class="aliment-delete" onclick="deleteAliment(${i})">✕</button>
-          </div>
-          <div class="aliment-row__bottom">
-            <div class="aliment-qty-wrap">
-              <input class="aliment-qty-input" type="number" value="${item.quantite_g}" data-idx="${i}" min="0" step="1">
-              <span class="aliment-qty-unit">g</span>
+        <div class="aliment-row" data-idx="${i}" style="animation-delay:${i * 55}ms">
+          <div class="ar-accent ${isBdd ? 'ar-accent--bdd' : 'ar-accent--ia'}"></div>
+          <div class="ar-body">
+            <div class="ar-header">
+              <span class="ar-name-text" id="name-text-${i}" onclick="editName(${i})">${escHtml(item.nom)}<span class="ar-edit-hint"> ✎</span></span>
+              <input class="ar-name-input" id="name-input-${i}" value="${escHtml(item.nom)}" data-idx="${i}" placeholder="Nom…">
+              <button class="aliment-delete" onclick="deleteAliment(${i})" aria-label="Supprimer">✕</button>
             </div>
-            <div class="aliment-kcal-display" id="kcal-${i}">${c.kcal} kcal</div>
-            <div class="aliment-macros-display" id="macros-${i}">P${c.prot} · G${c.carbs} · L${c.fat}</div>
+            <div class="ar-controls">
+              <div class="qty-stepper">
+                <button class="qty-btn" onclick="stepQty(${i}, -5)" aria-label="-5g">−</button>
+                <input class="aliment-qty-input" type="number" id="qty-${i}" value="${item.quantite_g}" data-idx="${i}" min="0" inputmode="numeric">
+                <span class="aliment-qty-unit">g</span>
+                <button class="qty-btn" onclick="stepQty(${i}, 5)" aria-label="+5g">+</button>
+              </div>
+              <div class="ar-macro-info">
+                <div class="aliment-kcal-display" id="kcal-${i}">${c.kcal} kcal</div>
+                <div class="aliment-macros-display" id="macros-${i}">P ${c.prot} · G ${c.carbs} · L ${c.fat}</div>
+              </div>
+            </div>
           </div>
-          <span class="aliment-source-badge ${item.source === 'bdd' ? 'badge-bdd' : 'badge-ia'}">
-            ${item.source === 'bdd' ? '✓ BDD officielle' : '~ Estimation IA'}
-          </span>
         </div>`;
     }).join('');
 
-    // Attach listeners
-    list.querySelectorAll('.aliment-name-input').forEach(inp => {
-      inp.addEventListener('input', e => {
-        alimentsData[+e.target.dataset.idx].nom = e.target.value;
-      });
-    });
+    // Quantity input → live recalc
     list.querySelectorAll('.aliment-qty-input').forEach(inp => {
       inp.addEventListener('input', e => {
         const idx = +e.target.dataset.idx;
         alimentsData[idx].quantite_g = +e.target.value || 0;
-        const c = computeItem(alimentsData[idx]);
-        document.getElementById('kcal-' + idx).textContent   = c.kcal + ' kcal';
-        document.getElementById('macros-' + idx).textContent = `P${c.prot} · G${c.carbs} · L${c.fat}`;
+        updateItemDisplay(idx);
         updateTotals();
       });
     });
+
+    // Name input: save on blur / Enter, cancel on Escape
+    list.querySelectorAll('.ar-name-input').forEach(inp => {
+      inp.addEventListener('input', e => {
+        alimentsData[+e.target.dataset.idx].nom = e.target.value;
+      });
+      inp.addEventListener('blur', e => closeName(+e.target.dataset.idx));
+      inp.addEventListener('keydown', e => {
+        const idx = +e.target.dataset.idx;
+        if (e.key === 'Enter')  { e.target.blur(); }
+        if (e.key === 'Escape') { e.target.value = alimentsData[idx].nom; closeName(idx); }
+      });
+    });
+
     updateTotals();
+  }
+
+  // ── Tap-to-edit name ────────────────────────────────────────
+  window.editName = (idx) => {
+    document.getElementById(`name-text-${idx}`).style.display = 'none';
+    const inp = document.getElementById(`name-input-${idx}`);
+    inp.style.display = 'block';
+    inp.focus();
+    inp.select();
+  };
+
+  function closeName(idx) {
+    const nom = document.getElementById(`name-input-${idx}`).value.trim() || alimentsData[idx].nom;
+    alimentsData[idx].nom = nom;
+    const textEl = document.getElementById(`name-text-${idx}`);
+    textEl.innerHTML = escHtml(nom) + '<span class="ar-edit-hint"> ✎</span>';
+    textEl.style.display = '';
+    document.getElementById(`name-input-${idx}`).style.display = 'none';
+  }
+
+  // ── Qty stepper ─────────────────────────────────────────────
+  window.stepQty = (idx, delta) => {
+    const newVal = Math.max(0, (alimentsData[idx].quantite_g || 0) + delta);
+    alimentsData[idx].quantite_g = newVal;
+    document.getElementById('qty-' + idx).value = newVal;
+    updateItemDisplay(idx);
+    updateTotals();
+  };
+
+  function updateItemDisplay(idx) {
+    const c = computeItem(alimentsData[idx]);
+    document.getElementById('kcal-'   + idx).textContent = c.kcal + ' kcal';
+    document.getElementById('macros-' + idx).textContent = `P ${c.prot} · G ${c.carbs} · L ${c.fat}`;
   }
 
   function computeItem(item) {
@@ -1700,10 +1854,18 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('total-fat').textContent   = Math.round(fat * 10) / 10;
   }
 
-  // ── Delete aliment ──────────────────────────────────────────
+  // ── Delete aliment (with exit animation) ───────────────────
   window.deleteAliment = (idx) => {
-    alimentsData.splice(idx, 1);
-    renderAliments();
+    const row = document.querySelector(`.aliment-row[data-idx="${idx}"]`);
+    const doRemove = () => { alimentsData.splice(idx, 1); renderAliments(); };
+    if (row) {
+      row.style.transition = 'opacity .16s ease, transform .16s ease';
+      row.style.opacity    = '0';
+      row.style.transform  = 'translateX(-6px) scale(.97)';
+      setTimeout(doRemove, 165);
+    } else {
+      doRemove();
+    }
   };
 
   // ── Redo analysis ───────────────────────────────────────────

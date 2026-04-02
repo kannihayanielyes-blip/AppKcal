@@ -1,0 +1,17 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(node:*)",
+      "Bash(node -e \":*)",
+      "Bash(npm run:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(taskkill //F //IM node.exe)",
+      "Bash(taskkill /F /IM node.exe)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "Bash(curl -s http://localhost:3000/api/nutrition/ingredients)",
+      "Bash(git check-ignore:*)",
+      "Bash(grep -iE \"\\(password|secret|key\\)\\\\s*=\\\\s*[''''\"\"][^''''\"\"]{6,}\")",
+      "Bash(grep -iE \"\\(sk-[a-zA-Z0-9]{20,}|eyJhbGci|supabase\\\\.co.*service\\)\")"
+    ]
+  }
+}

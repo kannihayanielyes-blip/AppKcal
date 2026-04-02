@@ -71,19 +71,23 @@ async function analyzePhoto(req, res) {
     // ─────────────────────────────────────────────────────────────────────
 
     let prompt = `Avant tout, regarde si l'image contient un code-barres ou un QR code bien visible. Si oui, réponds UNIQUEMENT avec : {"type":"barcode","barcode":"XXXXXXXXX"} (remplace XXXXXXXXX par la valeur du code).
-Si c'est de la nourriture sans code-barres visible, tu es un expert en nutrition. Analyse cette photo de repas avec précision.
-Réponds uniquement en français. Les noms des aliments doivent être en français (ex: 'Poulet' pas 'Chicken', 'Saumon' pas 'Salmon', 'Haricots verts' pas 'Green beans').`;
+Si c'est de la nourriture sans code-barres visible :
+Tu es un expert en nutrition. Analyse cette photo de repas.
+Pour chaque aliment visible :
+- Identifie-le précisément en français avec un nom simple et générique (ex: 'Poulet' pas 'Poulet grillé', 'Riz' pas 'Riz safrané')
+- Estime la quantité en grammes en te basant sur la taille d'une assiette standard (26cm) ou d'un verre standard (25cl)
+- Si tu vois une main ou un objet de référence, utilise-le
+- En cas de doute sur la quantité, indique une fourchette réaliste et prends la valeur médiane
+- Calcule kcal, proteines_g, lipides_g, glucides_g pour la quantité estimée (pas pour 100g)`;
     if (description) prompt += `\nL'utilisateur précise : ${description}`;
     if (weight_g)    prompt += `\nLe poids total de l'assiette est d'environ ${weight_g}g`;
     prompt += `
-Identifie chaque aliment séparément. Utilise des noms simples et génériques sans adjectifs (ex: 'Poulet' pas 'Poulet grillé', 'Riz' pas 'Riz safrané', 'Haricots verts' pas 'Haricots verts à l'ail').
-Pour chaque aliment, estime la quantité avec soin en tenant compte de la taille de l'assiette visible. En cas de doute, légèrement surestimer plutôt que sous-estimer.
-Estime également les macronutriments pour chaque aliment.
-Retourne UNIQUEMENT du JSON valide : {"type":"food","items":[{"name":"...","quantity_g":0,"kcal":0,"proteines_g":0,"lipides_g":0,"glucides_g":0,"fibres_g":0}]}`;
+Réponds UNIQUEMENT en JSON brut : {"type":"food","items":[{"name":"...","quantity_g":0,"kcal":0,"proteines_g":0,"lipides_g":0,"glucides_g":0}]}
+Sois précis et conservateur sur les quantités.`;
 
     const response = await openai.chat.completions.create({
-      model: 'gpt-4o-mini',
-      max_tokens: 300,
+      model: 'gpt-4o',
+      max_tokens: 400,
       messages: [
         {
           role: 'user',
@@ -202,6 +206,29 @@ Retourne UNIQUEMENT du JSON valide : {"type":"food","items":[{"name":"...","quan
       return data && data.length > 0 ? data[0] : null;
     }
 
+    async function searchBrutsIlike(nom) {
+      const cols = 'nom, kcal_100g, proteines_g, glucides_100g, lipides_100g';
+      const { data: full } = await supabaseAdmin
+        .from('aliments_bruts')
+        .select(cols)
+        .ilike('nom', `%${nom}%`)
+        .order('nom', { ascending: true })
+        .limit(1);
+      if (full && full.length > 0) return full[0];
+
+      const kws = keywords(nom);
+      for (const kw of kws) {
+        const { data: kwr } = await supabaseAdmin
+          .from('aliments_bruts')
+          .select(cols)
+          .ilike('nom', `%${kw}%`)
+          .order('nom', { ascending: true })
+          .limit(1);
+        if (kwr && kwr.length > 0) return kwr[0];
+      }
+      return null;
+    }
+
     async function searchPrepares(nom) {
       const cols = 'nom, kcal_100g, proteines_100g, glucides_100g, lipides_100g';
 
@@ -250,7 +277,12 @@ Retourne UNIQUEMENT du JSON valide : {"type":"food","items":[{"name":"...","quan
       // 1. Search aliments_bruts via RPC (ORDER BY LENGTH, filters applied server-side)
       let match = await searchTable(null, nomNorm);
 
-      // 2. Fallback: search aliments_prepares
+      // 2. Fallback: direct ILIKE on aliments_bruts (word-by-word)
+      if (!match) {
+        match = await searchBrutsIlike(nomNorm);
+      }
+
+      // 3. Fallback: search aliments_prepares
       if (!match) {
         match = await searchPrepares(nomNorm);
       }
