@@ -16,19 +16,19 @@ async function getStats(req, res) {
     const today   = new Date().toISOString().split('T')[0];
     const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-    const [usersRes, logsRes, invitesRes, todayLogsRes, weekLogsRes] = await Promise.all([
+    const [usersRes, logsRes, invitesRes, todaySessionsRes, weekSessionsRes] = await Promise.all([
       supabaseAdmin.from('profiles').select('id, email, created_at, onboarding_done', { count: 'exact' }),
       supabaseAdmin.from('nutrition_logs').select('id', { count: 'exact' }),
       supabaseAdmin.from('invite_codes').select('*'),
-      supabaseAdmin.from('nutrition_logs').select('user_id').eq('date', today),
-      supabaseAdmin.from('nutrition_logs').select('user_id').gte('date', weekAgo)
+      supabaseAdmin.from('user_sessions').select('user_id').gte('created_at', today + 'T00:00:00.000Z'),
+      supabaseAdmin.from('user_sessions').select('user_id').gte('created_at', weekAgo + 'T00:00:00.000Z')
     ]);
 
     const total_users           = usersRes.count || 0;
     const onboarding_done_count = usersRes.data?.filter(u => u.onboarding_done).length || 0;
     const onboarding_percent    = total_users > 0 ? Math.round((onboarding_done_count / total_users) * 100) : 0;
-    const active_today          = new Set(todayLogsRes.data?.map(l => l.user_id) || []).size;
-    const active_week           = new Set(weekLogsRes.data?.map(l => l.user_id) || []).size;
+    const active_today          = new Set(todaySessionsRes.data?.map(s => s.user_id) || []).size;
+    const active_week           = new Set(weekSessionsRes.data?.map(s => s.user_id) || []).size;
 
     const now = new Date();
     const activeInvites = invitesRes.data?.filter(i =>
@@ -71,7 +71,26 @@ async function getUsers(req, res) {
       .range(from, to);
 
     if (error) return res.status(400).json({ error: error.message });
-    res.json({ users: data, total: count, page: Number(page), limit: Number(limit) });
+
+    const userIds = (data || []).map(u => u.id);
+    const { data: sessions } = userIds.length
+      ? await supabaseAdmin.from('user_sessions').select('user_id, created_at').in('user_id', userIds)
+      : { data: [] };
+
+    const sessionMap = {};
+    for (const s of sessions || []) {
+      if (!sessionMap[s.user_id]) sessionMap[s.user_id] = { last_seen: s.created_at, count: 0 };
+      if (s.created_at > sessionMap[s.user_id].last_seen) sessionMap[s.user_id].last_seen = s.created_at;
+      sessionMap[s.user_id].count++;
+    }
+
+    const users = (data || []).map(u => ({
+      ...u,
+      last_seen:     sessionMap[u.id]?.last_seen  || null,
+      session_count: sessionMap[u.id]?.count      || 0
+    }));
+
+    res.json({ users, total: count, page: Number(page), limit: Number(limit) });
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' });
   }
@@ -111,17 +130,19 @@ async function getUserFull(req, res) {
 
     if (profileErr || !profile) return res.status(404).json({ error: 'Utilisateur introuvable' });
 
-    const [recettesRes, weightRes, nutritionRes] = await Promise.all([
+    const [recettesRes, weightRes, nutritionRes, sessionsRes] = await Promise.all([
       supabaseAdmin.from('recettes').select('*').eq('user_id', id),
       supabaseAdmin.from('weight_logs').select('*').eq('user_id', id).order('date', { ascending: false }).limit(10),
-      supabaseAdmin.from('nutrition_logs').select('*').eq('user_id', id).gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0])
+      supabaseAdmin.from('nutrition_logs').select('*').eq('user_id', id).gte('date', new Date(Date.now() - 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]),
+      supabaseAdmin.from('user_sessions').select('created_at, ip, user_agent').eq('user_id', id).order('created_at', { ascending: false }).limit(20)
     ]);
 
     res.json({
       profile,
       recettes:       recettesRes.data  || [],
       weight_logs:    weightRes.data    || [],
-      nutrition_logs: nutritionRes.data || []
+      nutrition_logs: nutritionRes.data || [],
+      sessions:       sessionsRes.data  || []
     });
   } catch (err) {
     res.status(500).json({ error: 'Erreur serveur' });

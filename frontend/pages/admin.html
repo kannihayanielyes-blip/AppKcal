@@ -246,7 +246,7 @@
     .pill.active { background: var(--text-primary); color: #FFFFFF; border-color: var(--text-primary); }
 
     /* ── USERS ───────────────────────────────────────────────────── */
-    .users-layout { display: flex; height: calc(100vh - 133px); overflow: hidden; }
+    .users-layout { display: flex; height: calc(100vh - 89px); overflow: hidden; }
     .users-table-wrap { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-width: 0; }
     .users-table-inner { flex: 1; overflow-y: auto; }
     .user-avatar {
@@ -261,8 +261,8 @@
       width: 0; overflow: hidden; background: var(--bg-card); border-left: 1px solid var(--border);
       transition: width 0.3s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; flex-shrink: 0;
     }
-    .user-panel.open { width: 400px; }
-    .user-panel-inner { width: 400px; height: 100%; overflow-y: auto; }
+    .user-panel.open { width: 460px; }
+    .user-panel-inner { width: 460px; height: 100%; overflow-y: auto; padding-bottom: 40px; }
     .panel-header {
       padding: 20px 20px 16px; border-bottom: 1px solid var(--border);
       display: flex; align-items: flex-start; gap: 12px;
@@ -472,6 +472,79 @@
       .metric-grid { grid-template-columns: repeat(2, 1fr); }
       .invite-layout { grid-template-columns: 1fr; }
     }
+
+    /* ── SESSIONS MODAL ──────────────────────────────────────────── */
+    .metric-card.clickable { cursor: pointer; }
+    .metric-card.clickable:hover { box-shadow: var(--shadow-md); border-color: #C7C7CC; }
+    .metric-card.clickable:active { transform: scale(0.99); }
+
+    .sessions-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.45); backdrop-filter: blur(4px);
+      z-index: 600; display: flex; align-items: center; justify-content: center;
+      animation: fadeIn 0.15s ease;
+    }
+    .sessions-modal-overlay.hidden { display: none; }
+    .sessions-modal {
+      background: var(--bg-card); border-radius: 14px; width: 520px;
+      max-width: calc(100vw - 40px); max-height: calc(100vh - 80px);
+      overflow: hidden; display: flex; flex-direction: column;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.2), 0 4px 16px rgba(0,0,0,0.1);
+      animation: modalIn 0.22s cubic-bezier(0.16,1,0.3,1);
+    }
+    .sessions-modal-header {
+      padding: 18px 22px; border-bottom: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .sessions-modal-body { overflow-y: auto; flex: 1; }
+    .sessions-user-row {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 22px; border-bottom: 1px solid var(--border-light);
+      transition: background var(--transition);
+    }
+    .sessions-user-row:last-child { border-bottom: none; }
+    .sessions-user-row:hover { background: #FAFAFA; }
+    .sessions-user-avatar {
+      width: 34px; height: 34px; border-radius: 50%; flex-shrink: 0;
+      background: linear-gradient(135deg, #E5E5EA, #C7C7CC);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700; color: #6B6B6B; overflow: hidden;
+    }
+    .sessions-user-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .sessions-user-info { flex: 1; min-width: 0; }
+    .sessions-user-name { font-size: 13px; font-weight: 600; }
+    .sessions-user-sub { font-size: 11px; color: var(--text-secondary); margin-top: 1px; }
+    .sessions-user-time { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
+
+    /* ── BADGE last_seen ─────────────────────────────────────────── */
+    .badge-online { background: #DCFCE7; color: #15803D; }
+    .badge-online::before { background: var(--accent-success); }
+    .badge-inactive { background: #F2F2F7; color: #8E8E93; }
+    .badge-inactive::before { background: #AEAEB2; }
+
+    /* ── SESSIONS TIMELINE (panel utilisateur) ───────────────────── */
+    .session-timeline { display: flex; flex-direction: column; gap: 6px; }
+    .session-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 9px 11px; border-radius: var(--radius-sm);
+      background: var(--bg-page); font-size: 12px;
+      border-left: 2px solid transparent;
+      transition: border-color var(--transition), background var(--transition);
+    }
+    .session-item:first-child { border-left-color: #6B7C45; background: #F6FAF0; }
+    .session-item-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+    .session-item-label { font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+    .session-item-meta { color: var(--text-muted); font-size: 11px; margin-top: 2px; display: flex; flex-wrap: wrap; gap: 6px; }
+    .session-item-ip { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #AEAEB2; }
+
+    /* ── PANEL CLOSE BUTTON ──────────────────────────────────────── */
+    .panel-close-visible {
+      display: inline-flex; align-items: center; gap: 5px;
+      background: none; border: 1px solid var(--border); border-radius: var(--radius-sm);
+      padding: 5px 10px; font-size: 12px; font-weight: 600; color: var(--text-secondary);
+      cursor: pointer; font-family: inherit; transition: all var(--transition);
+      white-space: nowrap;
+    }
+    .panel-close-visible:hover { background: var(--bg-page); color: var(--text-primary); border-color: #C7C7CC; }
   </style>
 </head>
 <body>
@@ -578,8 +651,8 @@
             </div>
             <div class="users-table-inner">
               <table>
-                <thead><tr><th style="width:36px"></th><th>Utilisateur</th><th>E-mail</th><th>Objectif</th><th>Kcal/j</th><th>Onboarding</th><th>Inscription</th></tr></thead>
-                <tbody id="users-tbody"><tr><td colspan="7" class="text-center" style="padding:32px;color:var(--text-muted);font-size:13px;">Chargement…</td></tr></tbody>
+                <thead><tr><th style="width:36px"></th><th>Utilisateur</th><th>E-mail</th><th>Objectif</th><th>Kcal/j</th><th>Onboarding</th><th>Dernière connexion</th><th>Inscription</th></tr></thead>
+                <tbody id="users-tbody"><tr><td colspan="8" class="text-center" style="padding:32px;color:var(--text-muted);font-size:13px;">Chargement…</td></tr></tbody>
               </table>
             </div>
             <div class="pagination" id="users-pagination"></div>
@@ -600,7 +673,7 @@
                   </div>
                   <div class="panel-email" id="panel-email">—</div>
                 </div>
-                <button class="panel-close" id="panel-close-btn">×</button>
+                <button class="panel-close-visible" id="panel-close-btn">✕ Fermer</button>
               </div>
               <div class="panel-body" id="panel-body">
                 <div style="text-align:center;padding:40px 0;color:var(--text-muted);font-size:13px;">Sélectionnez un utilisateur</div>
@@ -816,6 +889,22 @@
   </div>
 </div>
 
+<!-- SESSIONS MODAL -->
+<div class="sessions-modal-overlay hidden" id="sessions-modal">
+  <div class="sessions-modal">
+    <div class="sessions-modal-header">
+      <div>
+        <div class="modal-title" id="sessions-modal-title">Utilisateurs actifs</div>
+        <div style="font-size:12px;color:var(--text-secondary);margin-top:2px;" id="sessions-modal-sub"></div>
+      </div>
+      <button class="modal-close" id="sessions-modal-close">×</button>
+    </div>
+    <div class="sessions-modal-body" id="sessions-modal-body">
+      <div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">Chargement…</div>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <script>
@@ -873,6 +962,25 @@ function showConfirm(title, msg) {
 function fmtDate(str) {
   if (!str) return '—';
   return new Date(str).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+function fmtDateTime(str) {
+  if (!str) return '—';
+  return new Date(str).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+}
+
+function timeAgo(str) {
+  if (!str) return '—';
+  const diffMs = Date.now() - new Date(str).getTime();
+  const diffMin = Math.floor(diffMs / 60000);
+  const diffH   = Math.floor(diffMs / 3600000);
+  const diffD   = Math.floor(diffMs / 86400000);
+  if (diffMin < 1)  return 'À l\'instant';
+  if (diffMin < 60) return `Il y a ${diffMin} min`;
+  if (diffH < 24)   return `Il y a ${diffH}h`;
+  if (diffD === 1)  return 'Hier';
+  if (diffD < 7)    return `Il y a ${diffD} jours`;
+  return fmtDate(str);
 }
 
 function initials(name, email) {
@@ -960,18 +1068,21 @@ async function loadStats() {
     document.getElementById('nav-badge-users').textContent   = data.total_users;
     document.getElementById('nav-badge-invites').textContent = data.invite_codes?.active ?? '—';
     const metrics = [
-      { label: 'Utilisateurs',        value: data.total_users,           sub: `${data.onboarding_done_count} onboarding terminé`, bar: data.onboarding_percent },
-      { label: 'Onboarding',           value: `${data.onboarding_percent}%`, sub: `${data.onboarding_done_count} / ${data.total_users} complétés`, bar: data.onboarding_percent },
-      { label: "Actifs aujourd'hui",   value: data.active_today,          sub: 'Logs nutritionnels', bar: data.total_users ? Math.round(data.active_today / data.total_users * 100) : 0 },
-      { label: 'Actifs cette semaine', value: data.active_week,           sub: '7 derniers jours',   bar: data.total_users ? Math.round(data.active_week / data.total_users * 100) : 0 },
+      { label: 'Utilisateurs',        value: data.total_users,           sub: `${data.onboarding_done_count} onboarding terminé`, bar: data.onboarding_percent, clickable: false },
+      { label: 'Onboarding',           value: `${data.onboarding_percent}%`, sub: `${data.onboarding_done_count} / ${data.total_users} complétés`, bar: data.onboarding_percent, clickable: false },
+      { label: "Actifs aujourd'hui",   value: data.active_today,          sub: 'Voir la liste →', bar: data.total_users ? Math.round(data.active_today / data.total_users * 100) : 0, clickable: 'today' },
+      { label: 'Actifs cette semaine', value: data.active_week,           sub: 'Voir la liste →', bar: data.total_users ? Math.round(data.active_week / data.total_users * 100) : 0, clickable: 'week' },
     ];
     document.getElementById('metric-grid').innerHTML = metrics.map(m => `
-      <div class="metric-card">
+      <div class="metric-card${m.clickable ? ' clickable' : ''}" ${m.clickable ? `data-sessions="${m.clickable}"` : ''}>
         <div class="metric-label">${m.label}</div>
         <div class="metric-value">${m.value}</div>
         <div class="metric-sub">${m.sub}</div>
         <div class="metric-bar"><div class="metric-bar-fill" style="width:${m.bar}%"></div></div>
       </div>`).join('');
+    document.querySelectorAll('.metric-card[data-sessions]').forEach(card => {
+      card.addEventListener('click', () => openSessionsModal(card.dataset.sessions));
+    });
     const tbody = document.getElementById('recent-users-tbody');
     const users = data.recent_users || [];
     tbody.innerHTML = users.length
@@ -986,6 +1097,53 @@ async function loadStats() {
   finally { document.getElementById('refresh-stats-btn').disabled = false; }
 }
 document.getElementById('refresh-stats-btn').addEventListener('click', loadStats);
+
+async function openSessionsModal(period) {
+  const modal    = document.getElementById('sessions-modal');
+  const titleEl  = document.getElementById('sessions-modal-title');
+  const subEl    = document.getElementById('sessions-modal-sub');
+  const bodyEl   = document.getElementById('sessions-modal-body');
+  const isToday  = period === 'today';
+  titleEl.textContent = isToday ? "Actifs aujourd'hui" : 'Actifs cette semaine';
+  subEl.textContent   = isToday ? 'Connexions depuis minuit' : '7 derniers jours';
+  bodyEl.innerHTML    = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">Chargement…</div>';
+  modal.classList.remove('hidden');
+  try {
+    const since = isToday
+      ? new Date().toISOString().split('T')[0] + 'T00:00:00.000Z'
+      : new Date(Date.now() - 7 * 86400000).toISOString();
+    const allUsers = await adminFetch('/admin/users?page=1&limit=200');
+    const sessions = await adminFetch(`/admin/stats`);
+    // On récupère les users qui ont une last_seen dans la période
+    const cutoff = new Date(since).getTime();
+    const activeUsers = (allUsers.users || []).filter(u => u.last_seen && new Date(u.last_seen).getTime() >= cutoff);
+    if (!activeUsers.length) {
+      bodyEl.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);font-size:13px;">Aucun utilisateur actif sur cette période</div>';
+      return;
+    }
+    subEl.textContent = `${activeUsers.length} utilisateur(s)`;
+    bodyEl.innerHTML = activeUsers
+      .sort((a, b) => new Date(b.last_seen) - new Date(a.last_seen))
+      .map(u => `
+        <div class="sessions-user-row">
+          <div class="sessions-user-avatar">${u.avatar_url ? `<img src="${u.avatar_url}" onerror="this.style.display='none'">` : ''}${initials(u.username, u.email)}</div>
+          <div class="sessions-user-info">
+            <div class="sessions-user-name">${u.username || u.email}</div>
+            <div class="sessions-user-sub">${u.email}</div>
+          </div>
+          <div class="sessions-user-time">${timeAgo(u.last_seen)}</div>
+        </div>`).join('');
+  } catch(e) {
+    bodyEl.innerHTML = `<div style="color:var(--accent-danger);padding:20px;font-size:13px;">${e.message}</div>`;
+  }
+}
+
+document.getElementById('sessions-modal-close').addEventListener('click', () => {
+  document.getElementById('sessions-modal').classList.add('hidden');
+});
+document.getElementById('sessions-modal').addEventListener('click', e => {
+  if (e.target === e.currentTarget) e.currentTarget.classList.add('hidden');
+});
 
 // ── users ────────────────────────────────────────────────────────
 async function loadUsers(page = 1, q = '') {
@@ -1014,10 +1172,20 @@ async function loadUsers(page = 1, q = '') {
 
 const GOAL_LABELS = { bulk: 'Prise de masse', cut: 'Sèche', maintain: 'Maintien', rebalance: 'Rééquilibre' };
 
+function lastSeenBadge(lastSeen) {
+  if (!lastSeen) return '<span style="color:var(--text-muted);font-size:12px;">—</span>';
+  const diffMs = Date.now() - new Date(lastSeen).getTime();
+  const diffH  = diffMs / 3600000;
+  const diffD  = diffMs / 86400000;
+  if (diffH < 24)  return '<span class="badge badge-online">En ligne récemment</span>';
+  if (diffD > 7)   return '<span class="badge badge-inactive">Inactif</span>';
+  return `<span style="color:var(--text-secondary);font-size:12px;">${fmtDate(lastSeen)}</span>`;
+}
+
 function renderUsersTable(users) {
   const tbody = document.getElementById('users-tbody');
   if (!users.length) {
-    tbody.innerHTML = `<tr><td colspan="7" class="text-center" style="padding:40px;color:var(--text-muted);font-size:13px;">Aucun utilisateur trouvé</td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="8" class="text-center" style="padding:40px;color:var(--text-muted);font-size:13px;">Aucun utilisateur trouvé</td></tr>`;
     return;
   }
   tbody.innerHTML = users.map(u => `
@@ -1028,6 +1196,7 @@ function renderUsersTable(users) {
       <td>${GOAL_LABELS[u.goal] || u.goal || '<span style="color:var(--text-muted)">—</span>'}</td>
       <td class="mono">${u.daily_kcal_target || '—'}</td>
       <td>${u.onboarding_done ? '<span class="badge badge-success">Terminé</span>' : '<span class="badge badge-neutral">En cours</span>'}</td>
+      <td>${lastSeenBadge(u.last_seen)}</td>
       <td style="color:var(--text-secondary)">${fmtDate(u.created_at)}</td>
     </tr>`).join('');
   tbody.querySelectorAll('tr[data-uid]').forEach(row => {
@@ -1114,6 +1283,23 @@ async function openUserPanel(userId) {
       ${disliked.length ? `<div><div class="panel-section-label">À éviter (${disliked.length})</div><div class="food-chips-wrap">${disliked.map(f => `<span class="food-chip" style="border-color:#FEE2E2;color:#991B1B;background:#FFF5F5;">✗ ${f}</span>`).join('')}</div></div>` : ''}
       ${data.recettes?.length ? `<div><div class="panel-section-label">Recettes (${data.recettes.length})</div><table class="panel-table"><thead><tr><th>Nom</th><th class="text-right">Kcal</th></tr></thead><tbody>${data.recettes.slice(0,5).map(r => `<tr><td>${r.emoji||''} ${r.nom}</td><td class="text-right mono">${r.calories_total||'—'}</td></tr>`).join('')}${data.recettes.length > 5 ? `<tr><td colspan="2" style="color:var(--text-muted)">+ ${data.recettes.length-5} autres…</td></tr>` : ''}</tbody></table></div>` : ''}
       ${data.nutrition_logs?.length ? `<div><div class="panel-section-label">Logs nutrition (7j)</div><table class="panel-table"><thead><tr><th>Date</th><th class="text-right">Kcal</th><th class="text-right">Prot.</th></tr></thead><tbody>${data.nutrition_logs.slice(0,7).map(l => `<tr><td>${fmtDate(l.date)}</td><td class="text-right mono">${l.calories_consumed||'—'}</td><td class="text-right mono">${l.proteines_consumed ? l.proteines_consumed+'g' : '—'}</td></tr>`).join('')}</tbody></table></div>` : ''}
+      <div>
+        <div class="panel-section-label">Activité</div>
+        <div class="panel-stat-row" style="margin-bottom:12px;">
+          <div class="panel-stat"><div class="panel-stat-label">Sessions</div><div class="panel-stat-value">${data.sessions?.length ? (data.sessions.length < 20 ? data.sessions.length : '20+') : '0'}</div></div>
+          <div class="panel-stat"><div class="panel-stat-label">Dernière connexion</div><div class="panel-stat-value" style="font-size:12px;margin-top:6px;">${data.sessions?.[0] ? fmtDateTime(data.sessions[0].created_at) : '—'}</div></div>
+        </div>
+        ${data.sessions?.length ? `<div class="session-timeline">${data.sessions.slice(0,20).map(s => {
+          const ua = s.user_agent || '';
+          const icon = /iPhone|iPad|Android/i.test(ua) ? '📱' : '💻';
+          const device = /iPhone/i.test(ua) ? 'iPhone' : /iPad/i.test(ua) ? 'iPad' : /Android/i.test(ua) ? 'Android'
+            : /Windows/i.test(ua) ? 'Windows' : /Mac/i.test(ua) ? 'Mac' : 'Desktop';
+          const browser = /Edg/i.test(ua) ? 'Edge' : /Chrome/i.test(ua) ? 'Chrome'
+            : /Safari/i.test(ua) ? 'Safari' : /Firefox/i.test(ua) ? 'Firefox' : 'Navigateur';
+          const ip = s.ip ? s.ip.replace(/(\d+\.\d+)\.\d+\.\d+/, '$1.x.x') : '—';
+          return '<div class="session-item"><div class="session-item-icon">' + icon + '</div><div style="flex:1;min-width:0;"><div class="session-item-label">' + device + ' · ' + browser + '</div><div class="session-item-meta"><span>' + timeAgo(s.created_at) + '</span><span class="session-item-ip">' + ip + '</span></div></div></div>';
+        }).join('')}</div>` : '<div style="color:var(--text-muted);font-size:12px;padding:8px 0;">Aucune connexion enregistrée</div>'}
+      </div>
       <div class="danger-zone"><p>Supprimer définitivement ce compte et toutes ses données.</p><button class="btn btn-danger" id="delete-user-btn" data-uid="${userId}" style="font-size:12px;">Supprimer le compte</button></div>`;
     document.getElementById('delete-user-btn').addEventListener('click', async e => {
       const id = e.currentTarget.dataset.uid;
@@ -1132,8 +1318,18 @@ async function openUserPanel(userId) {
   }
 }
 
-document.getElementById('panel-close-btn').addEventListener('click', () => {
+function closeUserPanel() {
   document.getElementById('user-panel').classList.remove('open');
+}
+document.getElementById('panel-close-btn').addEventListener('click', closeUserPanel);
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Escape') {
+    const panel = document.getElementById('user-panel');
+    if (panel.classList.contains('open')) closeUserPanel();
+    const sessModal = document.getElementById('sessions-modal');
+    if (!sessModal.classList.contains('hidden')) sessModal.classList.add('hidden');
+  }
 });
 
 document.getElementById('users-search').addEventListener('input', e => {

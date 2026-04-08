@@ -2,13 +2,956 @@
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="theme-color" content="#6B7C45">
-  <title>AppKcal</title>
-  <script>
-    // Always go through login — login.html handles redirect if already connected
-    window.location.replace('/pages/login.html');
-  </script>
+  <meta name="description" content="AppKcal analyse tes repas en photo, génère tes recettes selon tes objectifs et suit tes entraînements. Gratuit en beta.">
+  <title>AppKcal — Mange mieux. Soulève plus.</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+  <script src="/js/gsap.min.js"></script>
+  <script src="/js/ScrollTrigger.min.js"></script>
+  <style>
+    /* ── Reset & base ──────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --olive:      #6B7C45;
+      --olive-d:    #5a6a38;
+      --olive-xl:   #f0f4e8;
+      --cream:      #F5F5F0;
+      --white:      #ffffff;
+      --text:       #1a1a1a;
+      --muted:      #6b7280;
+      --border:     rgba(0,0,0,.07);
+      --shadow-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
+      --shadow-md:  0 4px 16px rgba(0,0,0,.1);
+      --shadow-lg:  0 20px 60px rgba(0,0,0,.12);
+      --r:          14px;
+    }
+    html { scroll-behavior: smooth; }
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: var(--text);
+      background: var(--white);
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { text-decoration: none; color: inherit; }
+    img { max-width: 100%; display: block; }
+
+    /* ── Utility ───────────────────────────────────────────────── */
+    .container { max-width: 1120px; margin: 0 auto; padding: 0 20px; }
+
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 11px 22px; border-radius: 10px; font-size: .92rem;
+      font-weight: 700; cursor: pointer; transition: all .18s;
+      border: 2px solid transparent; font-family: inherit;
+      white-space: nowrap; -webkit-tap-highlight-color: transparent;
+    }
+    .btn--primary {
+      background: var(--olive); color: #fff; border-color: var(--olive);
+    }
+    .btn--primary:hover { background: var(--olive-d); border-color: var(--olive-d); transform: translateY(-1px); }
+    .btn--ghost {
+      background: transparent; color: var(--text); border-color: var(--border);
+    }
+    .btn--ghost:hover { border-color: var(--olive); color: var(--olive); }
+    .btn--white {
+      background: #fff; color: var(--olive); border-color: #fff;
+    }
+    .btn--white:hover { background: #f0f4e8; }
+    .btn--lg { padding: 15px 32px; font-size: 1rem; border-radius: 12px; }
+
+    /* CTA pulse */
+    @keyframes cta-pulse {
+      0%,100% { box-shadow: 0 0 0 0 rgba(107,124,69,.35); }
+      50%      { box-shadow: 0 0 0 14px rgba(107,124,69,0); }
+    }
+    .btn--pulse { animation: cta-pulse 3s ease infinite; }
+
+    /* ── Scroll animations ──────────────────────────────────────── */
+    .anim { opacity: 0; transform: translateY(28px); transition: opacity 0.6s ease, transform 0.6s ease; }
+    .anim.from-left  { transform: translateX(-30px); }
+    .anim.from-right { transform: translateX(60px); }
+    .anim.scale-in   { transform: scale(0.88); }
+    .anim.visible    { opacity: 1 !important; transform: none !important; }
+
+    /* ── NAVBAR ─────────────────────────────────────────────────── */
+    .navbar {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 60px;
+      background: rgba(255,255,255,.92);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      transition: box-shadow .3s ease, background .3s ease;
+    }
+    .navbar__inner {
+      height: 100%; display: flex; align-items: center;
+      justify-content: space-between;
+    }
+    .navbar__logo {
+      font-size: 1.25rem; font-weight: 900; color: var(--olive);
+      letter-spacing: -.03em;
+    }
+    .navbar__logo span { color: var(--text); }
+    .navbar__actions { display: flex; gap: 8px; align-items: center; }
+    .navbar__actions .btn { padding: 8px 16px; font-size: .85rem; }
+
+    /* ── HERO ───────────────────────────────────────────────────── */
+    .hero {
+      min-height: 100dvh; padding-top: 60px;
+      background: var(--cream);
+      position: relative; overflow: hidden;
+      display: flex; align-items: center;
+    }
+    /* Grain texture */
+    .hero::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: .04; z-index: 0;
+    }
+    /* Soft blob */
+    .hero::after {
+      content: '';
+      position: absolute; top: -20%; right: -10%;
+      width: 600px; height: 600px;
+      background: radial-gradient(circle, rgba(107,124,69,.12) 0%, transparent 70%);
+      border-radius: 50%; pointer-events: none; z-index: 0;
+    }
+    .hero__inner {
+      position: relative; z-index: 1;
+      display: grid; grid-template-columns: 1fr;
+      gap: 48px; padding: 60px 0 80px; align-items: center;
+    }
+    @media (min-width: 900px) {
+      .hero__inner { grid-template-columns: 1fr 1fr; gap: 64px; padding: 80px 0 100px; }
+    }
+
+    .hero__badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--olive-xl); color: var(--olive);
+      border: 1.5px solid rgba(107,124,69,.25);
+      padding: 5px 14px; border-radius: 99px;
+      font-size: .78rem; font-weight: 700; letter-spacing: .02em;
+      margin-bottom: 20px;
+    }
+    .hero__title {
+      font-size: clamp(2.2rem, 6vw, 3.4rem);
+      font-weight: 900; line-height: 1.1;
+      letter-spacing: -.04em; color: var(--text);
+      margin-bottom: 36px;
+    }
+    .hero__title span { color: var(--olive); }
+    .hero__sub {
+      font-size: clamp(.95rem, 2vw, 1.08rem);
+      color: var(--muted); line-height: 1.7;
+      max-width: 480px; margin-bottom: 32px;
+    }
+    .hero__cta-group { display: flex; flex-direction: column; gap: 14px; }
+    .hero__trust {
+      font-size: .8rem; color: var(--muted);
+      display: flex; gap: 16px; flex-wrap: wrap;
+    }
+    .hero__trust span {
+      display: flex; align-items: center; gap: 5px;
+      font-weight: 600;
+    }
+    .hero__trust span::before {
+      content: '✓'; color: var(--olive); font-weight: 800;
+    }
+
+    /* Phone mockup */
+    .phone-wrap {
+      display: flex; justify-content: center;
+    }
+    @media (min-width: 900px) {
+      .phone-wrap { justify-content: flex-end; }
+    }
+    .phone {
+      width: 230px; position: relative;
+      filter: drop-shadow(0 32px 64px rgba(0,0,0,.18));
+      transition: transform .4s ease;
+    }
+    @media (min-width: 900px) {
+      .phone {
+        transform: perspective(900px) rotateY(-10deg) rotateX(3deg);
+        width: 260px;
+      }
+      .phone:hover {
+        transform: perspective(900px) rotateY(-6deg) rotateX(1deg) translateY(-6px);
+      }
+    }
+    .phone__frame {
+      background: #111;
+      border-radius: 42px;
+      padding: 14px;
+      position: relative;
+      box-shadow: inset 0 0 0 1.5px rgba(255,255,255,.1);
+    }
+    .phone__notch {
+      width: 72px; height: 22px;
+      background: #111;
+      border-radius: 0 0 14px 14px;
+      position: absolute; top: 0; left: 50%; transform: translateX(-50%);
+      z-index: 2;
+    }
+    .phone__screen {
+      background: #F5F5F0;
+      border-radius: 30px;
+      overflow: hidden;
+      padding: 28px 14px 16px;
+      min-height: 420px;
+    }
+    .mock-topbar {
+      display: flex; justify-content: space-between;
+      font-size: .6rem; font-weight: 600; color: #333;
+      margin-bottom: 14px; padding: 0 4px;
+    }
+    .mock-greeting {
+      font-size: .72rem; color: #6b7280; margin-bottom: 2px; padding: 0 4px;
+    }
+    .mock-name { font-size: .88rem; font-weight: 800; color: var(--text); margin-bottom: 16px; padding: 0 4px; }
+    .mock-ring-area {
+      display: flex; flex-direction: column; align-items: center;
+      margin-bottom: 16px;
+    }
+    .mock-ring-area svg { width: 90px; height: 90px; }
+    .mock-ring-kcal {
+      margin-top: -54px;
+      text-align: center; z-index: 1; position: relative;
+    }
+    .mock-ring-kcal-num { font-size: 1rem; font-weight: 900; color: var(--text); }
+    .mock-ring-kcal-lbl { font-size: .5rem; color: var(--muted); }
+    .mock-macros { display: flex; gap: 6px; margin-bottom: 14px; }
+    .mock-macro {
+      flex: 1; background: #fff; border-radius: 8px; padding: 6px 8px;
+    }
+    .mock-macro-lbl { font-size: .5rem; font-weight: 700; color: var(--muted); margin-bottom: 3px; }
+    .mock-macro-bar {
+      height: 3px; background: #e8e8e0; border-radius: 2px; overflow: hidden;
+    }
+    .mock-macro-fill { height: 100%; border-radius: 2px; background: var(--olive); }
+    .mock-macro-val { font-size: .55rem; font-weight: 800; color: var(--text); margin-top: 3px; }
+    .mock-log { display: flex; flex-direction: column; gap: 5px; }
+    .mock-log-entry {
+      background: #fff; border-radius: 9px;
+      padding: 7px 10px; display: flex;
+      justify-content: space-between; align-items: center;
+    }
+    .mock-log-name { font-size: .6rem; font-weight: 600; color: var(--text); }
+    .mock-log-kcal { font-size: .58rem; font-weight: 700; color: var(--olive); }
+    .mock-section-lbl {
+      font-size: .58rem; font-weight: 700; color: var(--muted);
+      text-transform: uppercase; letter-spacing: .06em;
+      padding: 0 4px; margin-bottom: 6px;
+    }
+
+    /* ── MOBILE HERO & NAVBAR ───────────────────────────────────── */
+    @media (max-width: 768px) {
+
+      /* Navbar — réduire les boutons, cacher "Se connecter" sur très petit écran */
+      .navbar__actions .btn--ghost { display: none; }
+      .navbar__actions .btn--primary {
+        padding: 8px 14px; font-size: .82rem;
+      }
+
+      /* Hero — centrage + espacement vertical serré */
+      .hero {
+        align-items: flex-start;
+        min-height: 100dvh;
+      }
+      .hero__inner {
+        padding: 28px 0 44px;
+        gap: 28px;
+        text-align: center;
+      }
+
+      /* Badge */
+      .hero__badge {
+        margin-bottom: 14px;
+        font-size: .74rem;
+      }
+
+      /* Titre — plus petit, ligne plus courte */
+      .hero__title {
+        font-size: clamp(1.75rem, 8.5vw, 2.1rem);
+        letter-spacing: -.03em;
+        line-height: 1.12;
+        margin-bottom: 40px;
+      }
+
+      /* Sous-titre */
+      .hero__sub {
+        font-size: .92rem;
+        max-width: 100%;
+        margin-bottom: 28px;
+        line-height: 1.85;
+        padding: 0 4px;
+      }
+
+      /* CTA pleine largeur */
+      .hero__cta-group {
+        align-items: center;
+        gap: 12px;
+      }
+      .hero__cta-group > div:first-child {
+        width: auto;
+      }
+      .hero__cta-group .btn--lg {
+        width: auto;
+        justify-content: center;
+        font-size: .88rem;
+        padding: 12px 28px;
+        border-radius: 10px;
+      }
+
+      /* Trust badges — centrés, resserrés */
+      .hero__trust {
+        justify-content: center;
+        gap: 10px;
+        font-size: .75rem;
+      }
+
+      /* Phone — plus petit, centré, ombre réduite */
+      .phone-wrap { justify-content: center; }
+      .phone {
+        width: 185px;
+        filter: drop-shadow(0 20px 40px rgba(0,0,0,.14));
+      }
+    }
+
+    /* ── FEATURES ───────────────────────────────────────────────── */
+    .features { padding: 96px 0; background: var(--white); }
+    .section-header { text-align: center; margin-bottom: 56px; }
+    .section-label {
+      display: inline-block;
+      font-size: .72rem; font-weight: 700; letter-spacing: .1em;
+      text-transform: uppercase; color: var(--olive);
+      margin-bottom: 12px;
+    }
+    .section-title {
+      font-size: clamp(1.7rem, 4vw, 2.6rem);
+      font-weight: 900; letter-spacing: -.03em;
+      line-height: 1.15; color: var(--text);
+    }
+    .section-sub {
+      font-size: .98rem; color: var(--muted);
+      margin-top: 12px; max-width: 520px; margin-left: auto; margin-right: auto;
+    }
+    .features__grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+    }
+    @media (min-width: 768px) {
+      .features__grid { grid-template-columns: repeat(3, 1fr); gap: 18px; }
+    }
+    .feat-card {
+      background: var(--white);
+      border: 1.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 24px 20px;
+      transition: transform .22s ease, box-shadow .22s ease, border-color .22s ease;
+    }
+    .feat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(107,124,69,.25);
+    }
+    .feat-icon {
+      width: 44px; height: 44px;
+      background: var(--olive-xl);
+      border-radius: 12px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.3rem; margin-bottom: 14px;
+    }
+    .feat-title { font-size: .92rem; font-weight: 800; margin-bottom: 5px; }
+    .feat-desc { font-size: .8rem; color: var(--muted); line-height: 1.55; }
+
+    /* ── OBJECTIFS ──────────────────────────────────────────────── */
+    .objectifs { padding: 96px 0; background: var(--cream); position: relative; overflow: hidden; }
+    .objectifs::before {
+      content: '';
+      position: absolute; inset: 0; pointer-events: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='300' height='300' filter='url(%23n)' opacity='1'/%3E%3C/svg%3E");
+      opacity: .03;
+    }
+    .obj-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      position: relative;
+    }
+    @media (min-width: 640px) {
+      .obj-grid { grid-template-columns: repeat(4, 1fr); gap: 18px; }
+    }
+    .obj-card {
+      background: var(--white);
+      border-radius: var(--r);
+      padding: 28px 20px 24px;
+      text-align: center;
+      border: 1.5px solid var(--border);
+      transition: transform .22s, box-shadow .22s, border-color .22s;
+      cursor: default;
+    }
+    .obj-card:hover {
+      transform: translateY(-4px);
+      box-shadow: var(--shadow-md);
+      border-color: rgba(107,124,69,.3);
+    }
+    .obj-icon { font-size: 2rem; margin-bottom: 10px; }
+    .obj-title { font-size: .92rem; font-weight: 800; color: var(--text); margin-bottom: 6px; }
+    .obj-sub { font-size: .72rem; color: var(--muted); line-height: 1.5; }
+
+    /* ── TESTIMONIALS ───────────────────────────────────────────── */
+    .testimonials { padding: 96px 0; background: var(--white); }
+    .testi-grid {
+      display: grid; grid-template-columns: 1fr;
+      gap: 18px;
+    }
+    @media (min-width: 768px) {
+      .testi-grid { grid-template-columns: repeat(3, 1fr); }
+    }
+    .testi-card {
+      background: var(--cream);
+      border-radius: var(--r);
+      padding: 28px 24px;
+      border: 1.5px solid var(--border);
+      transition: transform .2s, box-shadow .2s;
+    }
+    .testi-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-sm); }
+    .testi-stars { color: #f59e0b; font-size: .9rem; margin-bottom: 14px; letter-spacing: 1px; }
+    .testi-text {
+      font-size: .9rem; line-height: 1.7; color: var(--text);
+      margin-bottom: 20px; font-style: italic;
+    }
+    .testi-author { display: flex; align-items: center; gap: 10px; }
+    .testi-avatar {
+      width: 38px; height: 38px; border-radius: 50%;
+      background: var(--olive-xl);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.1rem; flex-shrink: 0;
+    }
+    .testi-name { font-size: .85rem; font-weight: 700; }
+    .testi-meta { font-size: .72rem; color: var(--muted); }
+
+    /* ── BETA CTA ───────────────────────────────────────────────── */
+    .beta-cta {
+      padding: 96px 0;
+      background: var(--olive);
+      position: relative; overflow: hidden;
+    }
+    .beta-cta::before {
+      content: '';
+      position: absolute; top: -50%; right: -10%;
+      width: 500px; height: 500px;
+      background: rgba(255,255,255,.06);
+      border-radius: 50%; pointer-events: none;
+    }
+    .beta-cta::after {
+      content: '';
+      position: absolute; bottom: -40%; left: -5%;
+      width: 400px; height: 400px;
+      background: rgba(0,0,0,.06);
+      border-radius: 50%; pointer-events: none;
+    }
+    .beta-cta__inner {
+      position: relative; z-index: 1;
+      text-align: center; max-width: 600px; margin: 0 auto;
+    }
+    .beta-cta__title {
+      font-size: clamp(1.8rem, 5vw, 2.8rem);
+      font-weight: 900; color: #fff;
+      letter-spacing: -.03em; line-height: 1.15;
+      margin-bottom: 14px;
+    }
+    .beta-cta__sub {
+      color: rgba(255,255,255,.8); font-size: .98rem;
+      line-height: 1.6; margin-bottom: 36px;
+    }
+    .beta-cta__trust {
+      margin-top: 18px; color: rgba(255,255,255,.7);
+      font-size: .78rem; font-weight: 500;
+    }
+
+    /* ── FOOTER ─────────────────────────────────────────────────── */
+    .footer {
+      background: #111; color: rgba(255,255,255,.7);
+      padding: 40px 0;
+    }
+    .footer__inner {
+      display: flex; flex-direction: column; align-items: center;
+      gap: 20px; text-align: center;
+    }
+    @media (min-width: 640px) {
+      .footer__inner {
+        flex-direction: row; justify-content: space-between;
+        text-align: left;
+      }
+    }
+    .footer__logo {
+      font-size: 1.1rem; font-weight: 900; color: #fff;
+      letter-spacing: -.02em;
+    }
+    .footer__logo span { color: var(--olive); }
+    .footer__copy { font-size: .8rem; }
+    .footer__links {
+      display: flex; gap: 20px; flex-wrap: wrap;
+      justify-content: center;
+    }
+    .footer__links a {
+      font-size: .8rem; transition: color .15s;
+    }
+    .footer__links a:hover { color: #fff; }
+    .footer__socials { display: flex; gap: 12px; }
+    .footer__social {
+      width: 34px; height: 34px; border-radius: 8px;
+      background: rgba(255,255,255,.08);
+      display: flex; align-items: center; justify-content: center;
+      font-size: .85rem; transition: background .15s;
+    }
+    .footer__social:hover { background: rgba(255,255,255,.15); }
+
+    /* ── Nav active state for reduced motion ────────────────────── */
+    @media (prefers-reduced-motion: reduce) {
+      .anim { transition: none; opacity: 1; transform: none; }
+      .btn--pulse { animation: none; }
+      .phone { transform: none !important; transition: none; }
+    }
+
+    /* ── GSAP initial states ─────────────────────────────────────── */
+    .navbar.scrolled {
+      background: rgba(255,255,255,.98);
+      box-shadow: 0 2px 20px rgba(0,0,0,.09);
+    }
+  </style>
 </head>
-<body></body>
+<body>
+
+<!-- ── NAVBAR ──────────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="container navbar__inner">
+    <a href="/" class="navbar__logo">App<span>Kcal</span></a>
+    <div class="navbar__actions">
+      <a href="/pages/login.html" class="btn btn--ghost">Se connecter</a>
+      <a href="/pages/register.html" class="btn btn--primary">Rejoindre la beta</a>
+    </div>
+  </div>
+</nav>
+
+<!-- ── HERO ────────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="container hero__inner">
+    <!-- Left: copy -->
+    <div>
+      <div class="hero__badge anim">🔥 Beta gratuite — Places limitées</div>
+      <h1 class="hero__title anim">
+        Mange mieux.<br>
+        Soulève <span>plus</span>.<br>
+        Sans prise de tête.
+      </h1>
+      <p class="hero__sub anim">
+        AppKcal analyse tes repas en photo, génère tes recettes
+        selon tes objectifs et suit tes entraînements. Gratuit.
+      </p>
+      <div class="hero__cta-group anim scale-in">
+        <div>
+          <a href="/pages/register.html" class="btn btn--primary btn--lg btn--pulse">
+            Rejoindre la beta gratuite →
+          </a>
+        </div>
+        <div class="hero__trust">
+          <span>Gratuit</span>
+          <span>Sans carte bancaire</span>
+          <span>Beta fermée</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right: phone mockup -->
+    <div class="phone-wrap anim from-right">
+      <div class="phone">
+        <div class="phone__frame">
+          <div class="phone__notch"></div>
+          <div class="phone__screen">
+            <div class="mock-topbar">
+              <span>11:42</span>
+              <span>🔋</span>
+            </div>
+            <div class="mock-greeting">Bon après-midi,</div>
+            <div class="mock-name">Elyes 👋</div>
+
+            <div class="mock-ring-area">
+              <svg viewBox="0 0 120 120" xmlns="http://www.w3.org/2000/svg">
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#e8e8e0" stroke-width="9"/>
+                <circle cx="60" cy="60" r="48" fill="none" stroke="#6B7C45" stroke-width="9"
+                  stroke-dasharray="241 61" stroke-dashoffset="-75"
+                  stroke-linecap="round"/>
+              </svg>
+              <div class="mock-ring-kcal">
+                <div class="mock-ring-kcal-num">1 840</div>
+                <div class="mock-ring-kcal-lbl">/ 2 200 kcal</div>
+              </div>
+            </div>
+
+            <div class="mock-macros">
+              <div class="mock-macro">
+                <div class="mock-macro-lbl">Protéines</div>
+                <div class="mock-macro-bar"><div class="mock-macro-fill" style="width:78%"></div></div>
+                <div class="mock-macro-val">117g</div>
+              </div>
+              <div class="mock-macro">
+                <div class="mock-macro-lbl">Glucides</div>
+                <div class="mock-macro-bar"><div class="mock-macro-fill" style="width:62%"></div></div>
+                <div class="mock-macro-val">186g</div>
+              </div>
+              <div class="mock-macro">
+                <div class="mock-macro-lbl">Lipides</div>
+                <div class="mock-macro-bar"><div class="mock-macro-fill" style="width:50%"></div></div>
+                <div class="mock-macro-val">42g</div>
+              </div>
+            </div>
+
+            <div class="mock-section-lbl">Aujourd'hui</div>
+            <div class="mock-log">
+              <div class="mock-log-entry">
+                <span class="mock-log-name">🥣 Petit-déjeuner</span>
+                <span class="mock-log-kcal">420 kcal</span>
+              </div>
+              <div class="mock-log-entry">
+                <span class="mock-log-name">🍗 Déjeuner</span>
+                <span class="mock-log-kcal">680 kcal</span>
+              </div>
+              <div class="mock-log-entry">
+                <span class="mock-log-name">🍎 Snack</span>
+                <span class="mock-log-kcal">210 kcal</span>
+              </div>
+              <div class="mock-log-entry">
+                <span class="mock-log-name">🍽️ Dîner</span>
+                <span class="mock-log-kcal">530 kcal</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FEATURES ─────────────────────────────────────────────────── -->
+<section class="features">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-label">Fonctionnalités</div>
+      <h2 class="section-title">Tout ce dont tu as besoin,<br>dans une seule app</h2>
+    </div>
+
+    <div class="features__grid">
+      <div class="feat-card anim">
+        <div class="feat-icon">📸</div>
+        <div class="feat-title">Photo IA</div>
+        <div class="feat-desc">Prends en photo ton repas, on calcule tout — calories, macros, chaque aliment détecté.</div>
+      </div>
+      <div class="feat-card anim">
+        <div class="feat-icon">📊</div>
+        <div class="feat-title">Suivi précis</div>
+        <div class="feat-desc">Kcal, protéines, glucides, lipides. Streak quotidien et historique hebdo.</div>
+      </div>
+      <div class="feat-card anim">
+        <div class="feat-icon">🏋️</div>
+        <div class="feat-title">Sport intégré</div>
+        <div class="feat-desc">Programmes PPL, Full Body, Arnold Split et plus. Suivi de tes séances en temps réel.</div>
+      </div>
+      <div class="feat-card anim">
+        <div class="feat-icon">🍽️</div>
+        <div class="feat-title">Recettes perso</div>
+        <div class="feat-desc">Générées par IA selon ton objectif, tes préférences et tes aliments à éviter.</div>
+      </div>
+      <div class="feat-card anim">
+        <div class="feat-icon">📅</div>
+        <div class="feat-title">Calendrier</div>
+        <div class="feat-desc">Planifie ta semaine nutrition en Kanban. Visualise tes efforts sur le long terme.</div>
+      </div>
+      <div class="feat-card anim">
+        <div class="feat-icon">📷</div>
+        <div class="feat-title">Code-barres</div>
+        <div class="feat-desc">Scanne n'importe quel produit et récupère les infos nutritionnelles instantanément.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── OBJECTIFS ─────────────────────────────────────────────────── -->
+<section class="objectifs">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-label">Objectifs</div>
+      <h2 class="section-title">Pour tous les objectifs</h2>
+      <p class="section-sub">Recettes et macros adaptées automatiquement selon ta cible.</p>
+    </div>
+
+    <div class="obj-grid">
+      <div class="obj-card anim from-left">
+        <div class="obj-icon">💪</div>
+        <div class="obj-title">Prise de masse</div>
+        <div class="obj-sub">Surplus calorique calculé, protéines optimisées</div>
+      </div>
+      <div class="obj-card anim from-left">
+        <div class="obj-icon">🔥</div>
+        <div class="obj-title">Sèche</div>
+        <div class="obj-sub">Déficit progressif, préservation musculaire</div>
+      </div>
+      <div class="obj-card anim from-left">
+        <div class="obj-icon">⚖️</div>
+        <div class="obj-title">Perte de gras</div>
+        <div class="obj-sub">Recomposition corporelle, recettes rassasiantes</div>
+      </div>
+      <div class="obj-card anim from-left">
+        <div class="obj-icon">✨</div>
+        <div class="obj-title">Maintien</div>
+        <div class="obj-sub">Équilibre nutritionnel, alimentation durable</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── TESTIMONIALS ──────────────────────────────────────────────── -->
+<section class="testimonials">
+  <div class="container">
+    <div class="section-header fade-in">
+      <div class="section-label">Témoignages</div>
+      <h2 class="section-title">Ils testent AppKcal en beta</h2>
+    </div>
+
+    <div class="testi-grid">
+      <div class="testi-card anim">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-text">"Enfin une app qui comprend que je veux pas juste maigrir mais prendre du muscle proprement. Les macros sont adaptées à mon objectif sans que j'aie rien à configurer."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">😎</div>
+          <div>
+            <div class="testi-name">Thomas</div>
+            <div class="testi-meta">24 ans — Prise de masse</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card anim">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-text">"La photo IA c'est dingue, j'ai plus besoin de chercher chaque aliment à la main. Je prends une photo de mon assiette et c'est bon, tout est calculé en 5 secondes."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">🌸</div>
+          <div>
+            <div class="testi-name">Sarah</div>
+            <div class="testi-meta">28 ans — Perte de gras</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="testi-card anim">
+        <div class="testi-stars">⭐⭐⭐⭐⭐</div>
+        <p class="testi-text">"Le scan code-barres + les recettes générées selon mes préférences, c'est exactement ce que je cherchais. Simple, rapide, pas besoin de passer 10 min à logger un repas."</p>
+        <div class="testi-author">
+          <div class="testi-avatar">🏋️</div>
+          <div>
+            <div class="testi-name">Karim</div>
+            <div class="testi-meta">22 ans — Sèche</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── BETA CTA ───────────────────────────────────────────────────── -->
+<section class="beta-cta">
+  <div class="container">
+    <div class="beta-cta__inner fade-in">
+      <h2 class="beta-cta__title anim">Rejoins la beta —<br>C'est gratuit</h2>
+      <p class="beta-cta__sub anim">
+        Places limitées. Aucune carte bancaire requise.<br>
+        Donne ton avis et façonne l'app avec nous.
+      </p>
+      <a href="/pages/register.html" class="btn btn--white btn--lg anim">
+        Rejoindre maintenant →
+      </a>
+      <div class="beta-cta__trust">🔒 Tes données restent privées. Jamais de spam.</div>
+    </div>
+  </div>
+</section>
+
+<!-- ── FOOTER ────────────────────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container footer__inner">
+    <div>
+      <div class="footer__logo">App<span>Kcal</span></div>
+      <div class="footer__copy" style="margin-top:6px">© 2026 AppKcal</div>
+    </div>
+    <div class="footer__links">
+      <a href="#">CGU</a>
+      <a href="#">Confidentialité</a>
+      <a href="#">Contact</a>
+    </div>
+    <div class="footer__socials">
+      <a href="https://instagram.com" target="_blank" rel="noopener" class="footer__social" aria-label="Instagram">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="5"/><circle cx="12" cy="12" r="5"/><circle cx="17.5" cy="6.5" r="1.5" fill="currentColor" stroke="none"/></svg>
+      </a>
+    </div>
+  </div>
+</footer>
+
+<script>
+  // Redirect logged-in users straight to dashboard
+  (function() {
+    try {
+      const token = localStorage.getItem('kcal_token') || sessionStorage.getItem('kcal_token');
+      if (token) window.location.replace('/pages/dashboard.html');
+    } catch(_) {}
+  })();
+
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function showAll() {
+    document.querySelectorAll('*').forEach(el => {
+      el.style.opacity = '1';
+      el.style.transform = 'none';
+    });
+  }
+
+  if (reducedMotion) {
+    showAll();
+  } else {
+    // Fallback si GSAP plante
+    try {
+      gsap.registerPlugin(ScrollTrigger);
+    } catch(e) {
+      showAll();
+    }
+
+    try {
+      console.log('GSAP loaded:', typeof gsap);
+      console.log('ScrollTrigger loaded:', typeof ScrollTrigger);
+      console.log('Elements found:', document.querySelectorAll('.anim').length);
+
+      // ── Navbar scroll shadow ───────────────────────────────────────
+      window.addEventListener('scroll', () => {
+        document.querySelector('.navbar').classList.toggle('scrolled', window.scrollY > 40);
+      }, { passive: true });
+
+      // ── Hero: word-split title ─────────────────────────────────────
+      const titleEl = document.querySelector('.hero__title');
+      if (titleEl) {
+        function splitWords(node) {
+          if (node.nodeType === Node.TEXT_NODE) {
+            const frag = document.createDocumentFragment();
+            node.textContent.split(/(\s+)/).forEach(part => {
+              if (!part) return;
+              if (/^\s+$/.test(part)) {
+                frag.appendChild(document.createTextNode(part));
+              } else {
+                const hw = document.createElement('span');
+                hw.style.cssText = 'display:inline-block;overflow:hidden;vertical-align:bottom;';
+                const hwi = document.createElement('span');
+                hwi.className = 'hwi';
+                hwi.style.display = 'inline-block';
+                hwi.textContent = part;
+                hw.appendChild(hwi);
+                frag.appendChild(hw);
+              }
+            });
+            return frag;
+          }
+          if (node.nodeType === Node.ELEMENT_NODE) {
+            if (node.tagName === 'BR') return node.cloneNode();
+            const clone = node.cloneNode(false);
+            node.childNodes.forEach(child => clone.appendChild(splitWords(child)));
+            return clone;
+          }
+          return node.cloneNode(true);
+        }
+        const frag = document.createDocumentFragment();
+        Array.from(titleEl.childNodes).forEach(child => frag.appendChild(splitWords(child)));
+        titleEl.innerHTML = '';
+        titleEl.appendChild(frag);
+        titleEl.style.opacity = '1';
+        gsap.set('.hero__title .hwi', { opacity: 0, y: 50 });
+      }
+
+      // ── Hero timeline ──────────────────────────────────────────────
+      const heroTl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+      heroTl
+        .fromTo('.hero__badge',     { opacity: 0, y: -20 }, { opacity: 1, y: 0, duration: 0.6 })
+        .to('.hero__title .hwi',    { opacity: 1, y: 0, duration: 0.7, stagger: 0.08 }, '-=0.3')
+        .fromTo('.hero__sub',       { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.6 }, '-=0.45')
+        .fromTo('.hero__cta-group', { opacity: 0, scale: 0.82 }, { opacity: 1, scale: 1, duration: 0.7, ease: 'back.out(1.4)' }, '-=0.35')
+        .from('.hero__trust span',  { opacity: 0, y: 10, duration: 0.4, stagger: 0.1 }, '-=0.5')
+        .fromTo('.phone-wrap',      { opacity: 0, x: 80, rotation: 3 }, { opacity: 1, x: 0, rotation: 0, duration: 0.9 }, '-=1.0');
+
+      // CTA pulse
+      gsap.to('.btn--pulse', {
+        scale: 1.04, repeat: -1, repeatDelay: 2.4, yoyo: true,
+        duration: 0.4, ease: 'power1.inOut', delay: 1.8
+      });
+
+      // ── Features ──────────────────────────────────────────────────
+      gsap.fromTo('.features .section-header',
+        { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+          scrollTrigger: { trigger: '.features', start: 'top 80%' }
+        }
+      );
+      gsap.fromTo('.feat-card',
+        { opacity: 0, y: 40 }, { opacity: 1, y: 0, duration: 0.6, stagger: 0.12, ease: 'power2.out',
+          scrollTrigger: { trigger: '.features__grid', start: 'top 80%' }
+        }
+      );
+
+      // ── Objectifs ─────────────────────────────────────────────────
+      gsap.fromTo('.objectifs .section-header',
+        { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+          scrollTrigger: { trigger: '.objectifs', start: 'top 80%' }
+        }
+      );
+      gsap.fromTo('.obj-card',
+        { opacity: 0, x: -30 }, { opacity: 1, x: 0, duration: 0.6, stagger: 0.15, ease: 'power2.out',
+          scrollTrigger: { trigger: '.obj-grid', start: 'top 75%' }
+        }
+      );
+
+      // ── Testimonials ───────────────────────────────────────────────
+      gsap.fromTo('.testimonials .section-header',
+        { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, ease: 'power3.out',
+          scrollTrigger: { trigger: '.testimonials', start: 'top 80%' }
+        }
+      );
+      gsap.fromTo('.testi-card',
+        { opacity: 0, y: 30 }, { opacity: 1, y: 0, duration: 0.7, stagger: 0.2, ease: 'power2.out',
+          scrollTrigger: { trigger: '.testi-grid', start: 'top 75%' }
+        }
+      );
+
+      // ── Beta CTA ──────────────────────────────────────────────────
+      gsap.set('.beta-cta__title, .beta-cta__sub, .beta-cta .btn--white', { opacity: 0, y: 20 });
+      const betaTl = gsap.timeline({
+        scrollTrigger: { trigger: '.beta-cta', start: 'top 70%' }
+      });
+      betaTl
+        .fromTo('.beta-cta__inner',
+          { clipPath: 'inset(0 50% 0 50%)', opacity: 1 },
+          { clipPath: 'inset(0 0% 0 0%)', duration: 0.8, ease: 'power2.inOut' }
+        )
+        .to('.beta-cta__title',     { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, '-=0.4')
+        .to('.beta-cta__sub',       { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, '-=0.3')
+        .to('.beta-cta .btn--white', { opacity: 1, y: 0, duration: 0.5, ease: 'power2.out' }, '-=0.3');
+
+    } catch(e) {
+      console.error('GSAP error:', e);
+      showAll();
+    }
+  }
+</script>
+
+</body>
 </html>

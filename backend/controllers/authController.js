@@ -189,6 +189,13 @@ async function login(req, res) {
       .eq('id', data.user.id)
       .single();
 
+    // Log session (fire-and-forget)
+    supabaseAdmin.from('user_sessions').insert({
+      user_id:    data.user.id,
+      ip:         req.headers['x-forwarded-for']?.split(',')[0].trim() || req.ip || null,
+      user_agent: req.headers['user-agent'] || null
+    }).then().catch(err => console.error('[login] session log error:', err.message));
+
     return res.json({
       session: data.session,
       user: {
