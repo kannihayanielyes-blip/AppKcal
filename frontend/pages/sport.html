@@ -14,7 +14,7 @@
 
     /* ─── ONBOARDING ─────────────────────────────────────────── */
     .onboard-bg {
-      background: linear-gradient(160deg, var(--olive) 0%, #4a5a2a 100%);
+      background: linear-gradient(160deg, #0c0e1f 0%, #0a2218 45%, #152e1c 100%);
       min-height: 100dvh;
       display: flex;
       flex-direction: column;
@@ -35,8 +35,10 @@
       flex: 1;
     }
     .prog-choice-card {
-      background: rgba(255,255,255,.12);
-      border: 1.5px solid rgba(255,255,255,.2);
+      background: rgba(255,255,255,.1);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid rgba(255,255,255,.18);
       border-radius: var(--radius-lg);
       padding: 18px 20px;
       display: flex;
@@ -46,8 +48,9 @@
       color: var(--white);
       -webkit-tap-highlight-color: transparent;
       transition: background .15s;
+      box-shadow: 0 4px 20px rgba(0,0,0,.25);
     }
-    .prog-choice-card:active { background: rgba(255,255,255,.2); }
+    .prog-choice-card:active { background: rgba(255,255,255,.18); }
     .prog-choice-card__icon { font-size: 1.8rem; flex-shrink: 0; }
     .prog-choice-card__body { flex: 1; min-width: 0; }
     .prog-choice-card__name { font-size: 1rem; font-weight: 800; }
@@ -64,7 +67,7 @@
 
     /* ─── PROGRAMME VIEW ─────────────────────────────────────── */
     .prog-header {
-      background: var(--olive);
+      background: linear-gradient(160deg, #0c0e1f 0%, #0a2218 45%, #152e1c 100%);
       color: var(--white);
       padding: 20px 20px 24px;
       position: relative;
@@ -93,14 +96,17 @@
       gap: 8px;
     }
     .seance-day-item {
-      background: var(--white);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 0.5px solid rgba(255,255,255,0.55);
       border-radius: var(--radius-lg);
       padding: 16px 18px;
       display: flex;
       align-items: center;
       gap: 14px;
       cursor: pointer;
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
       -webkit-tap-highlight-color: transparent;
       transition: transform .12s;
     }
@@ -124,7 +130,10 @@
 
     /* ─── SÉANCE — liste de navigation ──────────────────────── */
     .seance-header {
-      background: var(--white); border-bottom: 1px solid var(--cream-d);
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid rgba(0,0,0,0.06);
       padding: 14px 16px; display: flex; align-items: center; gap: 10px;
       position: sticky; top: 0; z-index: 20;
     }
@@ -135,9 +144,13 @@
     .seance-ex-list { padding: 12px 16px; display: flex; flex-direction: column; gap: 8px; }
 
     .seance-ex-item {
-      background: var(--white); border-radius: var(--radius-lg);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 0.5px solid rgba(255,255,255,0.55);
+      border-radius: var(--radius-lg);
       padding: 14px 16px; display: flex; align-items: center; gap: 12px;
-      box-shadow: var(--shadow-sm); cursor: pointer; -webkit-tap-highlight-color: transparent;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08); cursor: pointer; -webkit-tap-highlight-color: transparent;
       transition: transform .1s;
     }
     .seance-ex-item:active { transform: scale(.98); }
@@ -162,7 +175,10 @@
 
     /* ─── VUE EXERCICE ───────────────────────────────────────── */
     .ex-view-header {
-      background: var(--white); border-bottom: 1px solid var(--cream-d);
+      background: rgba(255,255,255,0.82);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-bottom: 0.5px solid rgba(0,0,0,0.06);
       padding: 14px 16px; display: flex; align-items: center; gap: 10px;
       position: sticky; top: 0; z-index: 20;
     }
@@ -173,7 +189,10 @@
     .ex-view-hero {
       padding: 24px 20px 16px;
       display: flex; align-items: center; gap: 16px;
-      background: var(--white); border-bottom: 1px solid var(--cream-d);
+      background: rgba(255,255,255,0.72);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border-bottom: 0.5px solid rgba(255,255,255,0.4);
     }
     .ex-view-hero__icon {
       width: 56px; height: 56px; border-radius: var(--radius-md);

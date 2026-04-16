@@ -252,7 +252,7 @@ async function request(method, path, body = null, options = {}) {
 
   if (res.status === 401 && !path.includes('/auth/login')) {
     clearSession();
-    window.location.href = '/pages/login.html';
+    navigate('/pages/login.html');
     return;
   }
 
@@ -329,11 +329,18 @@ const API = {
   }
 };
 
+// ── Page navigation avec fade-out ────────────────────────────
+function navigate(url) {
+  document.body.style.transition = 'opacity 0.15s ease';
+  document.body.style.opacity = '0';
+  setTimeout(() => { window.location.href = url; }, 150);
+}
+
 // ── Auth guard ────────────────────────────────────────────────
 function requireAuth() {
   const token = getToken();
   if (!token) {
-    window.location.href = '/pages/login.html';
+    navigate('/pages/login.html');
     return false;
   }
   return true;

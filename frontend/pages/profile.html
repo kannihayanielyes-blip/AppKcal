@@ -34,8 +34,8 @@
     .profile-hero__name { font-size:1.4rem; font-weight:800; }
     .profile-hero__email { font-size:.85rem; opacity:.8; margin-top:4px; }
 
-    .profile-stats { display:flex; gap:1px; background:var(--cream-d); }
-    .profile-stat { flex:1; background:var(--white); padding:16px; text-align:center; }
+    .profile-stats { display:flex; gap:1px; background:rgba(0,0,0,0.04); }
+    .profile-stat { flex:1; background:rgba(255,255,255,0.72); backdrop-filter:blur(14px); -webkit-backdrop-filter:blur(14px); padding:16px; text-align:center; }
     .profile-stat__val { font-size:1.3rem; font-weight:800; color:var(--olive); }
     .profile-stat__lbl { font-size:.72rem; color:var(--text-muted); margin-top:2px; }
 
@@ -43,7 +43,10 @@
     .profile-section h3 { font-size:.85rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); margin-bottom:10px; }
 
     .profile-row {
-      background:var(--white);
+      background:rgba(255,255,255,0.72);
+      backdrop-filter:blur(14px);
+      -webkit-backdrop-filter:blur(14px);
+      border:0.5px solid rgba(255,255,255,0.5);
       border-radius:var(--radius-md);
       margin-bottom:1px;
       display:flex;
