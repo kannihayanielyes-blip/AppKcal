@@ -6,6 +6,10 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 // POST /api/photo/analyze
 async function analyzePhoto(req, res) {
   try {
+    console.log('[photo] req.file:', req.file ? 'présent' : 'absent');
+    console.log('[photo] req.body keys:', Object.keys(req.body));
+    console.log('[photo] OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? 'définie' : 'MANQUANTE');
+
     if (!req.file && !req.body.image_base64) {
       return res.status(400).json({ error: 'Image requise' });
     }
@@ -326,7 +330,7 @@ Sois précis et conservateur sur les quantités.`;
 
     res.json(normalized);
   } catch (err) {
-    console.error('[photoAnalyze]', err);
+    console.error('[photo] ERREUR COMPLÈTE:', err.message, err.stack);
     if (err.code === 'insufficient_quota') {
       return res.status(402).json({ error: 'Quota OpenAI dépassé' });
     }
