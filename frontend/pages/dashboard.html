@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#F2F2F7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Dashboard — AppKcal</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/dashboard.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════════════════════
+     HEADER
+═══════════════════════════════════════ -->
+<header class="dash-header">
+  <a href="/pages/profile.html" class="dash-avatar-link">
+    <div class="dash-avatar" id="user-avatar">?</div>
+  </a>
+  <div class="dash-header-text">
+    <div id="greeting" class="dash-greeting">Bonjour</div>
+    <div id="user-name" class="dash-title">…</div>
+  </div>
+  <a href="/pages/calendar.html" class="dash-cal-btn" aria-label="Calendrier">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="3" y="4" width="18" height="18" rx="3"/>
+      <line x1="16" y1="2" x2="16" y2="6"/>
+      <line x1="8" y1="2" x2="8" y2="6"/>
+      <line x1="3" y1="10" x2="21" y2="10"/>
+    </svg>
+  </a>
+</header>
+
+<!-- ═══════════════════════════════════════
+     CONTENU PRINCIPAL
+═══════════════════════════════════════ -->
+<main class="dash-page">
+
+  <!-- ══ Hero : anneau + stats + macros ════════════════════════ -->
+  <div class="kcal-hero">
+
+    <!-- Anneau SVG tricolore — centré -->
+    <div class="kcal-ring-side">
+      <div class="ring-wrap">
+        <svg class="ring-svg" viewBox="0 0 120 120" fill="none">
+          <circle class="ring-track" cx="60" cy="60" r="50"/>
+          <circle id="ring-protein" class="ring-seg ring-seg--protein" cx="60" cy="60" r="50" transform="rotate(-90 60 60)"/>
+          <circle id="ring-carbs"   class="ring-seg ring-seg--carbs"   cx="60" cy="60" r="50" transform="rotate(-90 60 60)"/>
+          <circle id="ring-fat"     class="ring-seg ring-seg--fat"     cx="60" cy="60" r="50" transform="rotate(-90 60 60)"/>
+        </svg>
+        <div class="ring-center">
+          <div class="ring-pct" id="ring-pct">0%</div>
+          <div class="ring-pct-lbl">objectif</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Info calories -->
+    <div class="kcal-info-side">
+      <div class="kcal-info-label">Calories</div>
+      <div class="kcal-info-num">
+        <span id="kcal-consumed" class="kcal-info-big">0</span>
+        <span class="kcal-info-unit">kcal</span>
+      </div>
+      <div class="kcal-info-remaining" id="kcal-remaining">— restantes</div>
+
+      <!-- Éléments masqués pour compatibilité dashboard.js -->
+      <span id="kcal-target" style="display:none">2000</span>
+      <div id="kcal-bar" style="display:none;width:0%"></div>
+    </div>
+
+  </div>
+
+  <!-- ══ Badges macros ════════════════════════════════════════ -->
+  <div class="macro-badges">
+
+    <div class="mbadge mbadge--protein">
+      <span class="mbadge-icon">P</span>
+      <div class="mbadge-body">
+        <div class="mbadge-val"><span id="macro-protein">0</span>g<span id="macro-protein-target" class="mbadge-target" style="display:none"></span></div>
+        <div class="mbadge-name">Protéines</div>
+        <div class="mbadge-bar-wrap" id="macro-protein-bar-wrap" style="display:none"><div id="macro-protein-bar" class="mbadge-bar mbadge-bar--protein"></div></div>
+      </div>
+    </div>
+
+    <div class="mbadge mbadge--carbs">
+      <span class="mbadge-icon">G</span>
+      <div class="mbadge-body">
+        <div class="mbadge-val"><span id="macro-carbs">0</span>g<span id="macro-carbs-target" class="mbadge-target" style="display:none"></span></div>
+        <div class="mbadge-name">Glucides</div>
+        <div class="mbadge-bar-wrap" id="macro-carbs-bar-wrap" style="display:none"><div id="macro-carbs-bar" class="mbadge-bar mbadge-bar--carbs"></div></div>
+      </div>
+    </div>
+
+    <div class="mbadge mbadge--fat">
+      <span class="mbadge-icon">L</span>
+      <div class="mbadge-body">
+        <div class="mbadge-val"><span id="macro-fat">0</span>g<span id="macro-fat-target" class="mbadge-target" style="display:none"></span></div>
+        <div class="mbadge-name">Lipides</div>
+        <div class="mbadge-bar-wrap" id="macro-fat-bar-wrap" style="display:none"><div id="macro-fat-bar" class="mbadge-bar mbadge-bar--fat"></div></div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ══ Streak ════════════════════════════════════════════════ -->
+  <div class="streak-banner">
+    <div class="streak-left">
+      <div class="streak-flame">🔥</div>
+      <div>
+        <div class="streak-count" id="streak-count">0</div>
+        <div class="streak-label">jours de suite</div>
+      </div>
+    </div>
+    <a href="/pages/calendar.html" class="streak-cal-link">Voir →</a>
+  </div>
+
+  <!-- ══ Journal alimentaire ═══════════════════════════════════ -->
+  <div class="section-header">
+    <div class="section-title">Repas du jour</div>
+    <button class="section-action" onclick="document.getElementById('add-food-overlay').classList.add('open')">+ Ajouter</button>
+  </div>
+
+  <div class="food-list" id="food-list">
+    <div class="empty-state">
+      <div class="icon">🥗</div>
+      <h3>Rien encore</h3>
+      <p>Ajoute ton premier repas !</p>
+    </div>
+  </div>
+
+  <!-- ══ Suggestions intelligentes ════════════════════════════ -->
+  <div id="smart-suggestions-section" style="display:none">
+    <div class="section-header mt-16">
+      <div class="section-title">💡 Idées pour finir ta journée</div>
+    </div>
+    <div class="smart-suggestion-banner" id="smart-banner"></div>
+    <div class="smart-cards" id="smart-cards"></div>
+  </div>
+
+  <!-- ══ Suivi du poids ════════════════════════════════════════ -->
+  <div class="section-header mt-24">
+    <div class="section-title">⚖️ Poids</div>
+    <button class="section-action" id="weigh-btn-top" onclick="openWeightModal()">+ Me peser</button>
+  </div>
+
+  <div class="weight-stats-row">
+    <div class="weight-stat-box">
+      <div class="weight-stat-box__val" id="w-current">—</div>
+      <div class="weight-stat-box__label">Actuel</div>
+    </div>
+    <div class="weight-stat-box">
+      <div class="weight-stat-box__val" id="w-goal">—</div>
+      <div class="weight-stat-box__label">Objectif</div>
+    </div>
+    <div class="weight-stat-box">
+      <div class="weight-stat-box__val" id="w-next">—</div>
+      <div class="weight-stat-box__label">Prochaine</div>
+    </div>
+  </div>
+
+  <div class="weight-chart-card" id="weight-chart-card">
+    <div class="empty-state" id="weight-empty">
+      <div class="icon">⚖️</div>
+      <h3>Aucune pesée</h3>
+      <p>Enregistre ta première pesée !</p>
+    </div>
+    <canvas id="weight-chart" style="display:none;width:100%;max-height:180px"></canvas>
+  </div>
+
+  <div style="padding:0 16px 32px">
+    <button class="btn btn--outline btn--full" onclick="openWeightModal()">
+      ⚖️ Me peser aujourd'hui
+    </button>
+  </div>
+
+</main>
+
+<!-- FAB -->
+<button class="fab" id="fab" aria-label="Ajouter un repas">+</button>
+
+<!-- ═══════════════════════════════════════
+     BOTTOM NAV
+═══════════════════════════════════════ -->
+<nav class="bottom-nav">
+  <a class="nav-item active" href="/pages/dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Accueil
+  </a>
+  <a class="nav-item" href="/pages/feed.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Feed
+  </a>
+  <a class="nav-item nav-item--fab" href="/pages/photo.html">
+    <div class="nav-fab-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff"/><circle cx="12" cy="13" r="4" stroke="#fff"/></svg>
+    </div>
+    <span>Photo IA</span>
+  </a>
+  <a class="nav-item" href="/pages/sport.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M7 3l-4 9 4 9M17 3l4 9-4 9"/></svg>
+    Sport
+  </a>
+  <a class="nav-item" href="/pages/calendar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Calendrier
+  </a>
+</nav>
+
+<!-- ═══════════════════════════════════════
+     SHEET : AJOUTER UN REPAS
+═══════════════════════════════════════ -->
+<div class="bottom-sheet-overlay" id="add-food-overlay">
+  <div class="bottom-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">Ajouter un repas</div>
+
+    <div class="meal-type-row">
+      <button class="meal-type-btn active" data-meal="breakfast">🌅 Matin</button>
+      <button class="meal-type-btn" data-meal="lunch">☀️ Midi</button>
+      <button class="meal-type-btn" data-meal="dinner">🌙 Soir</button>
+      <button class="meal-type-btn" data-meal="snack">🍎 Snack</button>
+    </div>
+
+    <button class="btn btn--outline btn--full mb-16" id="photo-btn" style="gap:8px">
+      📸 Scanner une photo
+    </button>
+    <input type="file" id="photo-input" accept="image/*" capture="environment" style="display:none">
+
+    <form id="add-food-form" novalidate>
+      <div class="form-group mb-16">
+        <label class="form-label">Nom de l'aliment</label>
+        <input class="form-input" type="text" id="food-name" placeholder="ex: Poulet grillé" required>
+      </div>
+
+      <div class="form-group mb-16">
+        <label class="form-label">Calories (kcal)</label>
+        <input class="form-input" type="number" id="food-kcal" placeholder="350" inputmode="numeric" required>
+      </div>
+
+      <div class="macros-row mb-16">
+        <div class="form-group">
+          <label class="form-label">Prot. (g)</label>
+          <input class="form-input" type="number" id="food-protein" placeholder="0" inputmode="decimal" step="0.1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Gluc. (g)</label>
+          <input class="form-input" type="number" id="food-carbs" placeholder="0" inputmode="decimal" step="0.1">
+        </div>
+        <div class="form-group">
+          <label class="form-label">Lip. (g)</label>
+          <input class="form-input" type="number" id="food-fat" placeholder="0" inputmode="decimal" step="0.1">
+        </div>
+      </div>
+
+      <div style="display:flex;gap:10px">
+        <button type="button" id="close-sheet" class="btn btn--ghost" style="flex:1">Annuler</button>
+        <button type="submit" class="btn btn--primary" style="flex:2">Enregistrer</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- ═══════════════════════════════════════
+     MODAL : PESÉE
+═══════════════════════════════════════ -->
+<div class="weight-modal-overlay" id="weight-modal" onclick="handleWeightOverlayClick(event)">
+  <div class="weight-modal-sheet">
+    <div class="sheet-handle"></div>
+    <div class="sheet-title">⚖️ Pesée du jour</div>
+    <p class="text-muted text-sm mb-16" id="weight-modal-date"></p>
+
+    <div class="form-group mb-24">
+      <label class="form-label">Ton poids aujourd'hui (kg)</label>
+      <input
+        class="form-input"
+        type="number"
+        id="weight-input-modal"
+        step="0.1"
+        inputmode="decimal"
+        placeholder="ex : 72.5"
+        style="font-size:1.3rem;font-weight:700;text-align:center"
+      >
+    </div>
+
+    <div style="display:flex;gap:10px">
+      <button class="btn btn--ghost" style="flex:1" onclick="closeWeightModal()">Annuler</button>
+      <button class="btn btn--primary" style="flex:2" id="weight-save-btn">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<!-- ═══════════════════════════════════════
+     RING UPDATE (observe changes from dashboard.js)
+═══════════════════════════════════════ -->
+<script>
+(function () {
+  const CIRC = 2 * Math.PI * 50; // 314.159
+
+  function updateRing() {
+    var kcalConsumed = parseFloat(document.getElementById('kcal-consumed').textContent) || 0;
+    var kcalTarget   = parseFloat(document.getElementById('kcal-target').textContent)   || 2000;
+    var proteinG     = parseFloat(document.getElementById('macro-protein').textContent) || 0;
+    var carbsG       = parseFloat(document.getElementById('macro-carbs').textContent)   || 0;
+    var fatG         = parseFloat(document.getElementById('macro-fat').textContent)     || 0;
+
+    var pKcal = proteinG * 4;
+    var cKcal = carbsG   * 4;
+    var fKcal = fatG     * 9;
+
+    var P  = Math.min(CIRC,         (pKcal / kcalTarget) * CIRC);
+    var Cg = Math.min(CIRC - P,     (cKcal / kcalTarget) * CIRC);
+    var F  = Math.min(CIRC - P - Cg,(fKcal / kcalTarget) * CIRC);
+
+    var rp = document.getElementById('ring-protein');
+    var rc = document.getElementById('ring-carbs');
+    var rf = document.getElementById('ring-fat');
+    if (rp) { rp.style.strokeDasharray = P  + ' ' + CIRC; rp.style.strokeDashoffset = '0'; }
+    if (rc) { rc.style.strokeDasharray = Cg + ' ' + CIRC; rc.style.strokeDashoffset = -P; }
+    if (rf) { rf.style.strokeDasharray = F  + ' ' + CIRC; rf.style.strokeDashoffset = -(P + Cg); }
+
+    var pctEl = document.getElementById('ring-pct');
+    if (pctEl) pctEl.textContent = Math.min(100, Math.round(kcalConsumed / kcalTarget * 100)) + '%';
+
+    var remEl = document.getElementById('kcal-remaining');
+    if (remEl) {
+      var rem = Math.max(0, Math.round(kcalTarget - kcalConsumed));
+      remEl.textContent = rem.toLocaleString('fr-FR') + ' kcal restantes';
+    }
+  }
+
+  // Observer les mises à jour de dashboard.js
+  var obs = new MutationObserver(updateRing);
+  ['kcal-consumed', 'kcal-target', 'macro-protein', 'macro-carbs', 'macro-fat'].forEach(function(id) {
+    var el = document.getElementById(id);
+    if (el) obs.observe(el, { childList: true, subtree: true, characterData: true });
+  });
+
+  updateRing(); // état initial
+})();
+</script>
+
+<script src="/js/api.js"></script>
+<script src="/js/dashboard.js"></script>
+</body>
+</html>

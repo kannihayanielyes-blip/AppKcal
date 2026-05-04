@@ -1,0 +1,638 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#6B7C45">
+  <title>Calendrier — AppKcal</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    .cal-page { min-height:100dvh; padding-bottom:calc(var(--nav-h) + env(safe-area-inset-bottom)); }
+    .cal-header { padding:20px 20px 12px; display:flex; align-items:center; justify-content:space-between; }
+    .cal-header h1 { font-size:1.3rem; font-weight:700; }
+    .cal-nav { display:flex; align-items:center; gap:12px; }
+    .cal-nav button { width:36px; height:36px; border-radius:50%; background:rgba(255,255,255,0.72); backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px); border:0.5px solid rgba(255,255,255,0.5); font-size:1rem; display:flex; align-items:center; justify-content:center; }
+    .cal-week-label { font-size:.9rem; font-weight:600; color:var(--text-muted); }
+
+    /* ── Kanban wrapper ── */
+    .kanban-scroll {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0 16px 20px;
+      /* Scrollbar visible mais fine sur desktop */
+      scrollbar-width: thin;
+      scrollbar-color: var(--cream-d) transparent;
+    }
+    .kanban-scroll::-webkit-scrollbar { height: 4px; }
+    .kanban-scroll::-webkit-scrollbar-track { background: transparent; }
+    .kanban-scroll::-webkit-scrollbar-thumb { background: var(--cream-d); border-radius: 99px; }
+
+    .kanban {
+      display: flex;
+      gap: 10px;
+      /* 7 colonnes × 160px + 6 gaps × 10px = 1180px → force le scroll sur mobile */
+      width: max-content;
+      min-width: 100%;
+    }
+
+    /* ── Colonnes ── */
+    .kanban-col {
+      flex: 0 0 160px;
+      min-height: 300px;
+      height: auto;
+      background: rgba(255,255,255,0.68);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 0.5px solid rgba(255,255,255,0.5);
+      border-radius: var(--radius-lg);
+      padding: 12px 10px 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      display: flex;
+      flex-direction: column;
+    }
+    .kanban-col.today {
+      border: 1.5px solid rgba(107,124,69,0.5);
+      background: rgba(240,247,234,0.75);
+    }
+
+    /* En-tête colonne */
+    .kanban-col__day  { font-size:.68rem; font-weight:800; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); margin-bottom:2px; }
+    .kanban-col__date {
+      font-size:1.3rem; font-weight:800; margin-bottom:4px; line-height:1;
+    }
+    .kanban-col.today .kanban-col__date { color: var(--olive); }
+    .kanban-col__kcal { font-size:.72rem; color:var(--olive); font-weight:700; margin-bottom:8px; }
+    .kanban-col__bar  { height:3px; background:var(--cream-d); border-radius:99px; margin-bottom:10px; overflow:hidden; flex-shrink:0; }
+    .kanban-col__bar-fill { height:100%; background:var(--olive); border-radius:99px; transition:width .4s ease; }
+
+    /* Zone repas — occupe l'espace restant pour que la col fasse au moins 300px */
+    .kanban-meals {
+      flex: 1;
+      min-height: 180px;          /* zone de drop visible même vide */
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    /* Card repas compacte : nom + kcal sur une ligne */
+    .kanban-meal {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding: 6px 8px;
+      background: #FFFFFF;
+      border: 1px solid rgba(0, 0, 0, 0.12);
+      border-radius: 8px;
+      min-height: 32px;
+    }
+    .kanban-meal__name {
+      font-size: .78rem;
+      font-weight: 600;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      flex: 1;
+      min-width: 0;
+    }
+    .kanban-meal__kcal {
+      font-size: .72rem;
+      font-weight: 700;
+      color: var(--olive);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+    .kanban-more {
+      font-size:.72rem; color:var(--text-muted); text-align:center; padding:4px 0;
+    }
+    .kanban-empty {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: .75rem;
+      color: var(--cream-d);
+      letter-spacing:.02em;
+      border: 1.5px dashed var(--cream-d);
+      border-radius: var(--radius-sm);
+      min-height: 60px;
+    }
+
+    /* ── Bouton + colonne ── */
+    .kanban-col__header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 2px;
+    }
+    .kanban-add-btn {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: var(--olive);
+      color: #fff;
+      font-size: 1rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      transition: transform .15s, background .15s;
+      margin-top: 2px;
+    }
+    .kanban-add-btn:active { transform: scale(.88); background: var(--olive-d); }
+
+    /* ── Bouton X sur chaque meal ── */
+    .kanban-meal__delete {
+      width: 18px;
+      height: 18px;
+      border-radius: 50%;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: .7rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      opacity: 0;
+      transition: opacity .15s, background .15s;
+    }
+    .kanban-meal:hover .kanban-meal__delete,
+    .kanban-meal:focus-within .kanban-meal__delete { opacity: 1; }
+    .kanban-meal__delete:hover { background: #ffe0e0; color: var(--danger); }
+    /* Sur mobile : toujours visible */
+    @media (hover: none) { .kanban-meal__delete { opacity: .6; } }
+
+    /* ── Modal recettes ── */
+    .recipe-modal-overlay {
+      position: fixed; inset: 0; z-index: 500;
+      background: rgba(0,0,0,.45);
+      display: flex; align-items: flex-end;
+      opacity: 0; pointer-events: none;
+      transition: opacity .25s;
+    }
+    .recipe-modal-overlay.open { opacity: 1; pointer-events: all; }
+
+    .recipe-modal-sheet {
+      width: 100%; max-height: 85dvh;
+      background: var(--white);
+      border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+      padding: 12px 0 0;
+      display: flex; flex-direction: column;
+      transform: translateY(100%);
+      transition: transform .3s cubic-bezier(.32,0,.67,0);
+    }
+    .recipe-modal-overlay.open .recipe-modal-sheet {
+      transform: translateY(0);
+      transition-timing-function: cubic-bezier(.33,1,.68,1);
+    }
+
+    .recipe-modal-handle {
+      width: 36px; height: 4px;
+      background: var(--cream-d); border-radius: 99px;
+      margin: 0 auto 12px;
+    }
+    .recipe-modal-title {
+      font-size: 1rem; font-weight: 700;
+      padding: 0 20px 12px;
+      border-bottom: 1px solid var(--cream-d);
+    }
+
+    /* Search */
+    .recipe-search-wrap { padding: 12px 16px 0; }
+    .recipe-search-input {
+      width: 100%;
+      padding: 10px 14px;
+      border: 2px solid var(--cream-d);
+      border-radius: 99px;
+      font-size: .9rem;
+      outline: none;
+      background: var(--cream);
+      transition: border-color .2s;
+    }
+    .recipe-search-input:focus { border-color: var(--olive); background: var(--white); }
+
+    /* Category filters */
+    .recipe-filter-row {
+      display: flex; gap: 8px;
+      padding: 10px 16px;
+      overflow-x: auto; scrollbar-width: none;
+      flex-shrink: 0;
+    }
+    .recipe-filter-row::-webkit-scrollbar { display: none; }
+    .recipe-filter-btn {
+      padding: 5px 12px;
+      border-radius: 99px;
+      border: 1.5px solid var(--cream-d);
+      background: var(--white);
+      font-size: .78rem; font-weight: 600;
+      white-space: nowrap; flex-shrink: 0;
+      cursor: pointer; transition: all .18s;
+    }
+    .recipe-filter-btn.active {
+      border-color: var(--olive);
+      background: var(--olive);
+      color: var(--white);
+    }
+
+    /* Recipe list */
+    .recipe-list {
+      flex: 1; overflow-y: auto;
+      padding: 0 16px calc(env(safe-area-inset-bottom) + 16px);
+    }
+    .recipe-item {
+      display: flex; align-items: center; gap: 10px;
+      padding: 11px 0;
+      border-bottom: 1px solid var(--cream-d);
+      cursor: pointer;
+      transition: background .15s;
+    }
+    .recipe-item:last-child { border-bottom: none; }
+    .recipe-item__info { flex: 1; min-width: 0; }
+    .recipe-item__name { font-size: .88rem; font-weight: 600; }
+    .recipe-item__meta { font-size: .75rem; color: var(--text-muted); margin-top: 2px; }
+    .recipe-item__add {
+      padding: 6px 14px;
+      border-radius: 99px;
+      background: var(--olive);
+      color: var(--white);
+      font-size: .78rem; font-weight: 700;
+      border: none; cursor: pointer;
+      flex-shrink: 0; transition: background .15s;
+    }
+    .recipe-item__add:active { background: var(--olive-d); }
+    .recipe-item__add:disabled { opacity: .5; }
+    .recipe-empty {
+      text-align: center; padding: 40px 20px;
+      color: var(--text-muted); font-size: .9rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="cal-page">
+  <div class="cal-header">
+    <button onclick="history.length>1?history.back():location.href='/pages/dashboard.html'" style="font-size:1.3rem;color:var(--text-muted);background:none;border:none;cursor:pointer;margin-right:4px">←</button>
+    <h1>📅 Semaine</h1>
+    <div class="cal-nav">
+      <button id="prev-week">‹</button>
+      <span class="cal-week-label" id="week-label">—</span>
+      <button id="next-week">›</button>
+    </div>
+  </div>
+
+  <div class="kanban-scroll">
+    <div class="kanban" id="kanban"></div>
+  </div>
+</div>
+
+<!-- Recipe Modal -->
+<div class="recipe-modal-overlay" id="recipe-modal" onclick="handleModalOverlayClick(event)">
+  <div class="recipe-modal-sheet">
+    <div class="recipe-modal-handle"></div>
+    <div class="recipe-modal-title" id="modal-title">Ajouter un repas</div>
+    <div class="recipe-search-wrap">
+      <input class="recipe-search-input" id="recipe-search" type="text" placeholder="🔍 Rechercher une recette…" autocomplete="off">
+    </div>
+    <div class="recipe-filter-row" id="recipe-filters">
+      <button class="recipe-filter-btn active" data-cat="all">Tous</button>
+      <button class="recipe-filter-btn" data-cat="breakfast">🌅 Petit-déj</button>
+      <button class="recipe-filter-btn" data-cat="meal">🍽️ Repas</button>
+      <button class="recipe-filter-btn" data-cat="snack">🍎 Snack</button>
+      <button class="recipe-filter-btn" data-cat="dessert">🍮 Dessert</button>
+      <button class="recipe-filter-btn" data-cat="shaker">🥤 Shaker</button>
+    </div>
+    <div class="recipe-list" id="recipe-list">
+      <div class="recipe-empty">Chargement…</div>
+    </div>
+  </div>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="/pages/dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Accueil
+  </a>
+  <a class="nav-item" href="/pages/feed.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Feed
+  </a>
+  <a class="nav-item nav-item--fab" href="/pages/photo.html">
+    <div class="nav-fab-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff"/><circle cx="12" cy="13" r="4" stroke="#fff"/></svg>
+    </div>
+    <span>Photo IA</span>
+  </a>
+  <a class="nav-item" href="/pages/sport.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M7 3l-4 9 4 9M17 3l4 9-4 9"/></svg>
+    Sport
+  </a>
+  <a class="nav-item active" href="/pages/calendar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Calendrier
+  </a>
+</nav>
+
+<div id="toast-container"></div>
+<script src="/js/api.js"></script>
+<script>
+const DAYS_FR   = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+const DAYS_FULL = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+const MONTHS_FR = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+
+// ── État global ───────────────────────────────────────────────
+const state = {
+  mondayStr:  '',
+  target:     2000,
+  byDate:     {},        // dateStr → logs[]
+  recipes:    null,      // null = pas encore chargé
+  modalDate:  null,      // date courante du modal
+  activeFilter: 'all',
+};
+
+// ── Init ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+
+  state.mondayStr = getMondayOfWeek();
+  await renderWeek();
+
+  document.getElementById('prev-week').addEventListener('click', async () => {
+    state.mondayStr = addDays(state.mondayStr, -7);
+    await renderWeek();
+  });
+  document.getElementById('next-week').addEventListener('click', async () => {
+    state.mondayStr = addDays(state.mondayStr, 7);
+    await renderWeek();
+  });
+
+  // Recherche & filtres dans le modal
+  document.getElementById('recipe-search').addEventListener('input', renderRecipeList);
+  document.getElementById('recipe-filters').addEventListener('click', e => {
+    const btn = e.target.closest('.recipe-filter-btn');
+    if (!btn) return;
+    document.querySelectorAll('.recipe-filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    state.activeFilter = btn.dataset.cat;
+    renderRecipeList();
+  });
+});
+
+// ── Rendu semaine complète ────────────────────────────────────
+async function renderWeek() {
+  const kanban = document.getElementById('kanban');
+  kanban.innerHTML = `<div class="empty-state" style="width:100%"><div class="spinner" style="color:var(--olive)"></div></div>`;
+
+  const today  = new Date().toISOString().split('T')[0];
+  const sunday = addDays(state.mondayStr, 6);
+  document.getElementById('week-label').textContent =
+    `${formatShort(state.mondayStr)} – ${formatShort(sunday)}`;
+
+  try {
+    const [{ byDate }, profile] = await Promise.all([
+      API.nutrition.week(state.mondayStr),
+      API.user.profile()
+    ]);
+    state.byDate = byDate || {};
+    state.target = profile?.daily_kcal_target || 2000;
+
+    kanban.innerHTML = '';
+    let todayColIndex = -1;
+
+    for (let i = 0; i < 7; i++) {
+      const dateStr = addDays(state.mondayStr, i);
+      if (dateStr === today) todayColIndex = i;
+      kanban.appendChild(buildCol(dateStr, today));
+    }
+
+    // Scroll vers aujourd'hui
+    if (todayColIndex >= 0) {
+      const scroll = document.querySelector('.kanban-scroll');
+      scroll.scrollLeft = Math.max(0, todayColIndex * 170 - 16);
+    }
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ── Construire une colonne ────────────────────────────────────
+function buildCol(dateStr, today) {
+  const logs    = state.byDate[dateStr] || [];
+  const kcal    = logs.reduce((s, l) => s + (l.kcal || 0), 0);
+  const pct     = Math.min(100, (kcal / state.target) * 100);
+  const isToday = dateStr === (today || new Date().toISOString().split('T')[0]);
+  const d       = new Date(dateStr + 'T12:00:00'); // évite les problèmes de timezone
+
+  const col = document.createElement('div');
+  col.className = `kanban-col${isToday ? ' today' : ''}`;
+  col.dataset.date = dateStr;
+
+  // En-tête
+  col.innerHTML = `
+    <div class="kanban-col__header">
+      <div>
+        <div class="kanban-col__day">${DAYS_FR[d.getDay()]}</div>
+        <div class="kanban-col__date">${d.getDate()}</div>
+      </div>
+      <button class="kanban-add-btn" onclick="openRecipeModal('${dateStr}')" title="Ajouter un repas">+</button>
+    </div>
+    <div class="kanban-col__kcal" id="kcal-${dateStr}">${kcal} / ${state.target} kcal</div>
+    <div class="kanban-col__bar"><div class="kanban-col__bar-fill" id="bar-${dateStr}" style="width:${pct}%"></div></div>
+    <div class="kanban-meals" id="meals-${dateStr}"></div>`;
+
+  // Zone repas
+  refreshMealsEl(dateStr, col.querySelector(`#meals-${dateStr}`));
+  return col;
+}
+
+// ── (Re)peuple la zone repas d'une colonne ──────────────────
+function refreshMealsEl(dateStr, el) {
+  const logs = state.byDate[dateStr] || [];
+  if (!logs.length) {
+    el.innerHTML = '<div class="kanban-empty">—</div>';
+    return;
+  }
+  const MAX = 8;
+  el.innerHTML = logs.slice(0, MAX).map(l => `
+    <div class="kanban-meal">
+      <span class="kanban-meal__name">${escHtml(l.name || '—')}</span>
+      <span class="kanban-meal__kcal">${l.kcal || 0}</span>
+      <button class="kanban-meal__delete" onclick="deleteKanbanMeal('${l.id}','${dateStr}')" title="Supprimer">×</button>
+    </div>`).join('') +
+    (logs.length > MAX ? `<div class="kanban-more">+${logs.length - MAX} autres</div>` : '');
+}
+
+// ── Mise à jour locale d'une colonne (sans re-fetch) ────────
+function updateColUI(dateStr) {
+  const logs = state.byDate[dateStr] || [];
+  const kcal = logs.reduce((s, l) => s + (l.kcal || 0), 0);
+  const pct  = Math.min(100, (kcal / state.target) * 100);
+
+  const kcalEl = document.getElementById(`kcal-${dateStr}`);
+  const barEl  = document.getElementById(`bar-${dateStr}`);
+  const mealsEl = document.getElementById(`meals-${dateStr}`);
+  if (kcalEl)  kcalEl.textContent = `${kcal} / ${state.target} kcal`;
+  if (barEl)   barEl.style.width  = pct + '%';
+  if (mealsEl) refreshMealsEl(dateStr, mealsEl);
+}
+
+// ── Supprimer un repas du kanban ─────────────────────────────
+async function deleteKanbanMeal(logId, dateStr) {
+  try {
+    await API.nutrition.deleteLog(logId);
+    state.byDate[dateStr] = (state.byDate[dateStr] || []).filter(l => String(l.id) !== String(logId));
+    updateColUI(dateStr);
+    toast('Supprimé', 'success');
+  } catch (err) {
+    toast(err.message, 'error');
+  }
+}
+
+// ────────────────────────────────────────────────────────────
+// ── Modal recettes ───────────────────────────────────────────
+// ────────────────────────────────────────────────────────────
+
+async function openRecipeModal(dateStr) {
+  state.modalDate   = dateStr;
+  state.activeFilter = 'all';
+
+  // Titre avec la date lisible
+  const d = new Date(dateStr + 'T12:00:00');
+  document.getElementById('modal-title').textContent =
+    `Ajouter — ${DAYS_FULL[d.getDay()]} ${d.getDate()} ${MONTHS_FR[d.getMonth()]}`;
+
+  // Reset UI
+  document.getElementById('recipe-search').value = '';
+  document.querySelectorAll('.recipe-filter-btn').forEach(b =>
+    b.classList.toggle('active', b.dataset.cat === 'all')
+  );
+
+  document.getElementById('recipe-modal').classList.add('open');
+  document.getElementById('recipe-search').focus();
+
+  // Charger les recettes une seule fois
+  if (state.recipes === null) {
+    document.getElementById('recipe-list').innerHTML = '<div class="recipe-empty">Chargement…</div>';
+    try {
+      console.log('[Kanban] Chargement recettes...');
+      const data = await API.nutrition.recipes('all');
+      console.log('[Kanban] Recettes reçues :', data);
+      state.recipes = Array.isArray(data) ? data : [];
+      console.log('[Kanban] state.recipes.length :', state.recipes.length);
+    } catch (err) {
+      console.error('[Kanban] Erreur chargement recettes :', err);
+      state.recipes = null; // null = permettre un retry à la prochaine ouverture
+      document.getElementById('recipe-list').innerHTML =
+        `<div class="recipe-empty">Impossible de charger les recettes.<br><small>${err.message}</small></div>`;
+      return;
+    }
+  }
+  console.log('[Kanban] renderRecipeList avec', state.recipes.length, 'recettes');
+  renderRecipeList();
+}
+
+function closeRecipeModal() {
+  document.getElementById('recipe-modal').classList.remove('open');
+  state.modalDate = null;
+}
+
+function handleModalOverlayClick(e) {
+  if (e.target === document.getElementById('recipe-modal')) closeRecipeModal();
+}
+
+function renderRecipeList() {
+  const query  = document.getElementById('recipe-search').value.trim().toLowerCase();
+  const cat    = state.activeFilter;
+  const list   = document.getElementById('recipe-list');
+
+  // Pas encore chargé
+  if (state.recipes === null) {
+    list.innerHTML = '<div class="recipe-empty">Chargement…</div>';
+    return;
+  }
+
+  let items = [...state.recipes];
+
+  // Filtres
+  if (cat !== 'all') items = items.filter(r => r.categorie === cat);
+  if (query)         items = items.filter(r => (r.nom || '').toLowerCase().includes(query));
+
+  if (!items.length) {
+    const msg = state.recipes.length === 0
+      ? 'Aucune recette en base de données'
+      : 'Aucune recette pour ce filtre';
+    list.innerHTML = `<div class="recipe-empty">${msg}</div>`;
+    return;
+  }
+
+  list.innerHTML = items.map(r => `
+    <div class="recipe-item">
+      <div class="recipe-item__info">
+        <div class="recipe-item__name">${escHtml(r.nom)}</div>
+        <div class="recipe-item__meta">${r.calories_total} kcal · P${r.proteines_total ?? 0} G${r.glucides_total ?? 0} L${r.lipides_total ?? 0}</div>
+      </div>
+      <button class="recipe-item__add" onclick="addRecipeToDay('${r.id}')">+ Ajouter</button>
+    </div>`).join('');
+}
+
+async function addRecipeToDay(recipeId) {
+  const dateStr = state.modalDate;
+  if (!dateStr) return;
+
+  const r = (state.recipes || []).find(x => String(x.id) === String(recipeId));
+  if (!r) return;
+
+  // Désactiver le bouton cliqué
+  const btn = document.querySelector(`.recipe-item__add[onclick="addRecipeToDay('${recipeId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = '…'; }
+
+  try {
+    const mealType = r.categorie === 'breakfast' ? 'breakfast'
+                   : r.categorie === 'meal'      ? 'lunch'
+                   : 'snack';
+
+    const newLog = await API.nutrition.addLog({
+      name:      r.nom,
+      kcal:      r.calories_total,
+      protein_g: r.proteines_total ?? 0,
+      carbs_g:   r.glucides_total  ?? 0,
+      fat_g:     r.lipides_total   ?? 0,
+      meal_type: mealType,
+      date:      dateStr,           // passer la date cible
+    });
+
+    // Mettre à jour l'état local
+    if (!state.byDate[dateStr]) state.byDate[dateStr] = [];
+    state.byDate[dateStr].push({
+      id:   newLog.id || newLog.log_id || ('tmp_' + Date.now()),
+      name: r.nom,
+      kcal: r.calories_total,
+    });
+    updateColUI(dateStr);
+
+    toast(`${r.nom} ajouté !`, 'success');
+    closeRecipeModal();
+  } catch (err) {
+    toast(err.message, 'error');
+    if (btn) { btn.disabled = false; btn.textContent = '+ Ajouter'; }
+  }
+}
+
+// ── Helpers ───────────────────────────────────────────────────
+function addDays(dateStr, n) {
+  const d = new Date(dateStr + 'T12:00:00');
+  d.setDate(d.getDate() + n);
+  return d.toISOString().split('T')[0];
+}
+
+function formatShort(dateStr) {
+  return new Date(dateStr + 'T12:00:00').toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+</body>
+</html>

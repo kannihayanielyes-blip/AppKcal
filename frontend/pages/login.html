@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#6B7C45">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Connexion — AppKcal</title>
+  <link rel="stylesheet" href="/css/main.css">
+  <link rel="stylesheet" href="/css/auth.css">
+</head>
+<body data-page="login">
+
+<div class="auth-page">
+
+  <!-- ← Retour landing -->
+  <a href="/index.html" style="
+    display:inline-flex;align-items:center;gap:6px;
+    position:absolute;top:16px;left:16px;
+    color:#6B7C45;font-size:.85rem;font-weight:600;
+    text-decoration:none;padding:6px 4px;
+    transition:opacity .15s;
+    -webkit-tap-highlight-color:transparent;
+  " onmouseenter="this.style.opacity='.7'" onmouseleave="this.style.opacity='1'">
+    ← AppKcal
+  </a>
+
+  <!-- ── VUE LOGIN ──────────────────────────────────────────── -->
+  <div id="login-view">
+    <div class="auth-header">
+      <div class="auth-logo">🥗</div>
+      <h1 class="auth-title">Bon retour !</h1>
+      <p class="auth-subtitle">Connecte-toi pour suivre ta nutrition</p>
+    </div>
+
+    <div class="auth-body">
+      <form id="login-form" novalidate>
+        <div class="form-group mb-16">
+          <label class="form-label" for="email">Email</label>
+          <div class="input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input class="form-input" type="email" id="email"
+              placeholder="ton@email.com" autocomplete="email" inputmode="email" required>
+          </div>
+        </div>
+
+        <div class="form-group mb-16">
+          <label class="form-label" for="password">Mot de passe</label>
+          <div class="input-wrapper">
+            <span class="input-icon">🔒</span>
+            <input class="form-input" type="password" id="password"
+              placeholder="••••••••" autocomplete="current-password" required>
+            <button type="button" class="input-toggle" id="toggle-password">👁️</button>
+          </div>
+        </div>
+
+        <div class="text-right mb-16">
+          <a href="#" id="forgot-link" class="text-sm text-muted">Mot de passe oublié ?</a>
+        </div>
+
+        <button type="submit" id="submit-btn" class="btn btn--primary btn--full">
+          Se connecter
+        </button>
+
+        <div id="login-error" style="display:none;margin-top:14px;padding:12px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;color:#B91C1C;font-size:.875rem;font-weight:500;align-items:center;gap:8px;">
+          <span>⚠️</span>
+          <span id="login-error-text"></span>
+        </div>
+      </form>
+    </div>
+
+    <div class="auth-footer">
+      Pas encore de compte ?
+      <a href="/pages/register.html">S'inscrire</a>
+    </div>
+  </div>
+
+  <!-- ── VUE MOT DE PASSE OUBLIÉ ────────────────────────────── -->
+  <div id="forgot-panel" style="display:none">
+    <div class="auth-header">
+      <div class="auth-logo">🔑</div>
+      <h1 class="auth-title">Mot de passe oublié</h1>
+      <p class="auth-subtitle">Entre ton email pour recevoir un lien de réinitialisation</p>
+    </div>
+
+    <div class="auth-body">
+
+      <!-- Formulaire envoi -->
+      <div id="forgot-form-view">
+        <div class="form-group mb-16">
+          <label class="form-label" for="forgot-email">Email</label>
+          <div class="input-wrapper">
+            <span class="input-icon">✉️</span>
+            <input class="form-input" type="email" id="forgot-email"
+              placeholder="ton@email.com" autocomplete="email" inputmode="email">
+          </div>
+        </div>
+
+        <div id="forgot-error" style="display:none;margin-bottom:14px;padding:12px 16px;background:#FEF2F2;border:1px solid #FECACA;border-radius:10px;color:#B91C1C;font-size:.875rem;font-weight:500;align-items:center;gap:8px;">
+          <span>⚠️</span>
+          <span id="forgot-error-text"></span>
+        </div>
+
+        <button id="forgot-submit-btn" class="btn btn--primary btn--full">
+          Envoyer le lien
+        </button>
+
+        <div style="text-align:center;margin-top:16px">
+          <a href="#" id="forgot-back-link" class="text-sm text-muted">← Retour à la connexion</a>
+        </div>
+      </div>
+
+      <!-- Succès -->
+      <div id="forgot-success-view" style="display:none;text-align:center;padding:8px 0">
+        <div style="font-size:3rem;margin-bottom:16px">✅</div>
+        <div style="font-size:1.1rem;font-weight:800;margin-bottom:10px;color:#166534">Email envoyé !</div>
+        <div id="forgot-success-msg" style="font-size:.9rem;color:#374151;line-height:1.6;margin-bottom:24px"></div>
+        <button class="btn btn--outline btn--full" onclick="showLoginView()">
+          Retour à la connexion
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<!-- PWA install banner -->
+<div id="pwa-banner" style="
+  display:none;
+  position:fixed;
+  bottom:0;left:0;right:0;
+  z-index:999;
+  background:#111111;
+  color:#ffffff;
+  padding:14px 16px calc(14px + env(safe-area-inset-bottom));
+  box-shadow:0 -2px 16px rgba(0,0,0,0.25);
+  animation:slideUp .3s cubic-bezier(0.32,0.72,0,1);
+">
+  <style>
+    @keyframes slideUp {
+      from { transform: translateY(100%); }
+      to   { transform: translateY(0); }
+    }
+    #pwa-banner-inner {
+      display:flex;
+      align-items:center;
+      gap:12px;
+      max-width:480px;
+      margin:0 auto;
+    }
+    #pwa-banner-text {
+      flex:1;
+      font-family:-apple-system,sans-serif;
+      font-size:.875rem;
+      line-height:1.4;
+    }
+    #pwa-banner-text strong {
+      display:block;
+      font-size:.9375rem;
+      margin-bottom:2px;
+    }
+    #pwa-install-btn {
+      flex-shrink:0;
+      background:#6B7C45;
+      color:#fff;
+      border:none;
+      border-radius:8px;
+      font-size:.875rem;
+      font-weight:600;
+      padding:9px 16px;
+      cursor:pointer;
+      white-space:nowrap;
+      -webkit-tap-highlight-color:transparent;
+    }
+    #pwa-install-btn:active { opacity:.8; }
+    #pwa-dismiss-btn {
+      flex-shrink:0;
+      background:none;
+      border:none;
+      color:rgba(255,255,255,0.5);
+      font-size:20px;
+      line-height:1;
+      cursor:pointer;
+      padding:4px;
+      -webkit-tap-highlight-color:transparent;
+    }
+    #pwa-ios-icon {
+      display:inline-block;
+      width:18px;height:18px;
+      vertical-align:middle;
+      margin:0 2px;
+      opacity:.9;
+    }
+  </style>
+  <div id="pwa-banner-inner">
+    <div id="pwa-banner-text">
+      <strong id="pwa-title">📲 Installer AppKcal</strong>
+      <span id="pwa-subtitle">Accès rapide depuis ton écran d'accueil</span>
+    </div>
+    <button id="pwa-install-btn" style="display:none">Installer</button>
+    <button id="pwa-dismiss-btn" aria-label="Fermer">×</button>
+  </div>
+</div>
+
+<script>
+(function() {
+  const STORAGE_KEY = 'pwa_banner_dismissed';
+  if (localStorage.getItem(STORAGE_KEY)) return;
+
+  const banner      = document.getElementById('pwa-banner');
+  const installBtn  = document.getElementById('pwa-install-btn');
+  const dismissBtn  = document.getElementById('pwa-dismiss-btn');
+  const subtitle    = document.getElementById('pwa-subtitle');
+
+  function dismiss() {
+    localStorage.setItem(STORAGE_KEY, '1');
+    banner.style.animation = 'slideUp .25s cubic-bezier(0.32,0.72,0,1) reverse forwards';
+    setTimeout(() => banner.style.display = 'none', 260);
+  }
+  dismissBtn.addEventListener('click', dismiss);
+
+  // ── Android / Chrome — beforeinstallprompt ──────────────────
+  let deferredPrompt = null;
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    installBtn.style.display = 'block';
+    banner.style.display = 'block';
+
+    installBtn.addEventListener('click', async () => {
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      deferredPrompt = null;
+      dismiss();
+    }, { once: true });
+  });
+
+  window.addEventListener('appinstalled', dismiss);
+
+  // ── iOS / Safari — instructions manuelles ──────────────────
+  const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+  const isStandalone = window.navigator.standalone === true;
+  const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+
+  if (isIOS && !isStandalone && isSafari) {
+    subtitle.innerHTML =
+      'Appuie sur ' +
+      '<svg id="pwa-ios-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">' +
+        '<path d="M4 12v7a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7"/>' +
+        '<polyline points="16 6 12 2 8 6"/>' +
+        '<line x1="12" y1="2" x2="12" y2="15"/>' +
+      '</svg>' +
+      ' puis <strong style="color:#a8c16a">"Sur l\'écran d\'accueil"</strong>';
+    banner.style.display = 'block';
+  }
+})();
+</script>
+
+<script src="/js/api.js"></script>
+<script src="/js/auth.js"></script>
+</body>
+</html>
