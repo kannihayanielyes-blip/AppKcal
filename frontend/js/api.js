@@ -178,6 +178,12 @@ document.addEventListener('DOMContentLoaded', () => {
   const isAuthPage = ['/login', '/register', '/onboarding', '/admin']
     .some(p => path.includes(p));
 
+  // ── Onglet Coach : afficher si is_coach ────────────────────
+  if (getUser()?.is_coach) {
+    const navCoach = document.getElementById('nav-coach');
+    if (navCoach) navCoach.style.display = 'flex';
+  }
+
   // ── Badge MODE TEST ────────────────────────────────────────
   if (isTestMode()) {
     const badge = document.createElement('div');
@@ -326,7 +332,50 @@ const API = {
     exercices:   ()          => request('GET', '/sport/exercices'),
     saveSession: (body)      => request('POST', '/sport/historique', body),
     lastSession: (seanceNom) => request('GET', `/sport/historique/last?seance_nom=${encodeURIComponent(seanceNom)}`),
-  }
+  },
+
+  // Coach (côté coach uniquement — endpoints client-side livrés en Phase B)
+  coach: {
+    // Profil
+    getProfile:    ()     => request('GET',   '/coach/profile'),
+    createProfile: (data) => request('POST',  '/coach/profile', data),
+    updateProfile: (data) => request('PATCH', '/coach/profile', data),
+
+    // Clients
+    getClients:       ()         => request('GET',   '/coach/clients'),
+    inviteClient:     (data)     => request('POST',  '/coach/clients/invite', data),
+    getClientDetail:  (id)       => request('GET',   `/coach/clients/${id}`),
+    updateClient:     (id, data) => request('PATCH', `/coach/clients/${id}`, data),
+    acceptInvitation: (id)       => request('POST',  `/coach/accept/${id}`),
+
+    // Plans nutrition
+    getClientPlan: (clientId) => request('GET',  `/coach/plans/${clientId}`),
+    createPlan:    (data)     => request('POST', '/coach/plans', data),
+
+    // Programmes
+    assignProgramme: (data) => request('POST', '/coach/programmes', data),
+
+    // Objectifs hebdo
+    getWeeklyGoals:    (clientId) => request('GET',  `/coach/goals/${clientId}`),
+    createWeeklyGoals: (data)     => request('POST', '/coach/goals', data),
+
+    // Messages
+    getConversations: ()               => request('GET',  '/coach/messages'),
+    getMessages:      (clientId)       => request('GET',  `/coach/messages/${clientId}`),
+    sendMessage:      (clientId, data) => request('POST', `/coach/messages/${clientId}`, data),
+
+    // Bilans
+    generateReview: (clientId) => request('POST',  `/coach/reviews/generate/${clientId}`),
+    sendReview:     (id, data) => request('PATCH', `/coach/reviews/${id}`, data),
+
+    // Annuaire
+    getPublicCoaches: (params)         => request('GET',  `/coach/public${params || ''}`),
+    rateCoach:        (coachId, data)  => request('POST', `/coach/public/${coachId}/rate`, data),
+
+    // ── TODO Phase B : endpoints /api/client/coach/* pas encore implémentés
+    // getMyCoach, getMyPlan, getMyProgramme, getMyGoals, getMyMessages,
+    // sendMessageToCoach — livrés avec feat/coach-client
+  },
 };
 
 // ── Page navigation avec fade-out ────────────────────────────

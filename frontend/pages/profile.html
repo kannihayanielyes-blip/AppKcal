@@ -428,6 +428,49 @@
     </div>
   </div>
 
+  <!-- Bottom sheet : Devenir coach -->
+  <div class="mr-sheet" id="cc-create-sheet" role="dialog" aria-modal="true" aria-label="Devenir coach">
+    <div class="mr-sheet__overlay" id="cc-create-overlay"></div>
+    <div class="mr-sheet__panel">
+      <div class="mr-sheet__handle"></div>
+      <h2 class="mr-sheet__title">Devenir coach</h2>
+      <p class="text-sm text-muted mb-16" style="text-align:center">Crée ton profil coach et profite de 7 jours d'essai gratuit.</p>
+
+      <form id="cc-create-form" novalidate>
+        <div class="mr-row">
+          <div class="mr-field" style="flex:1">
+            <label for="cc-prenom">Prénom</label>
+            <input class="mr-input" type="text" id="cc-prenom" placeholder="ex : Marie">
+          </div>
+          <div class="mr-field" style="flex:1">
+            <label for="cc-nom">Nom *</label>
+            <input class="mr-input" type="text" id="cc-nom" placeholder="ex : Dupont" required>
+          </div>
+        </div>
+
+        <div class="mr-field">
+          <label for="cc-bio">Bio</label>
+          <textarea class="mr-textarea" id="cc-bio" placeholder="Présente ton approche, ton expérience…"></textarea>
+        </div>
+
+        <div class="mr-field">
+          <label>Spécialités</label>
+          <div style="display:flex;gap:10px;flex-wrap:wrap">
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer">
+              <input type="checkbox" class="cc-spec" value="nutrition"> Nutrition
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;font-size:14px;cursor:pointer">
+              <input type="checkbox" class="cc-spec" value="sport"> Sport
+            </label>
+          </div>
+        </div>
+
+        <button type="submit" class="mr-submit-btn" id="cc-submit">Créer mon profil coach</button>
+        <button type="button" class="mr-cancel-btn" id="cc-cancel">Annuler</button>
+      </form>
+    </div>
+  </div>
+
   <!-- Body info -->
   <div class="profile-section">
     <h3>Mon profil</h3>
@@ -468,6 +511,35 @@
       <div class="profile-row__icon">⚖️</div>
       <input class="form-input" type="number" id="weight-input" placeholder="ex: 72.5" step="0.1" inputmode="decimal" style="border:none;padding:0;font-size:.95rem;font-weight:600">
       <button class="btn btn--primary" id="weight-save-btn" style="padding:8px 16px;font-size:.85rem">Sauver</button>
+    </div>
+  </div>
+
+  <!-- Coach -->
+  <div class="profile-section" id="coach-section">
+    <h3>Coach</h3>
+    <div class="profile-row" id="row-become-coach" style="display:none;cursor:pointer">
+      <div class="profile-row__icon">⭐</div>
+      <div class="profile-row__body">
+        <div class="profile-row__value">Devenir coach</div>
+        <div class="profile-row__label">Essai gratuit 7 jours</div>
+      </div>
+      <div class="profile-row__arrow">›</div>
+    </div>
+    <div class="profile-row" id="row-find-coach" style="cursor:pointer" onclick="navigate('/pages/coachs.html')">
+      <div class="profile-row__icon">🔍</div>
+      <div class="profile-row__body">
+        <div class="profile-row__value">Trouver un coach</div>
+        <div class="profile-row__label">Annuaire des coaches AppKcal</div>
+      </div>
+      <div class="profile-row__arrow">›</div>
+    </div>
+    <div class="profile-row" id="row-coach-dashboard" style="display:none;cursor:pointer" onclick="navigate('/pages/coach-dashboard.html')">
+      <div class="profile-row__icon">👥</div>
+      <div class="profile-row__body">
+        <div class="profile-row__value">Mes clients</div>
+        <div class="profile-row__label">Espace coach</div>
+      </div>
+      <div class="profile-row__arrow">›</div>
     </div>
   </div>
 
@@ -520,6 +592,10 @@
   <a class="nav-item" href="/pages/sport.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M7 3l-4 9 4 9M17 3l4 9-4 9"/></svg>
     Sport
+  </a>
+  <a class="nav-item" id="nav-coach" href="/pages/coach-dashboard.html" style="display:none">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+    Coach
   </a>
   <a class="nav-item" href="/pages/calendar.html">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
@@ -782,6 +858,81 @@ async function mrDelete(id) {
 
 // Charger les recettes dès que le profil est prêt
 document.addEventListener('DOMContentLoaded', () => { mrLoad(); });
+
+/* ══════════════════════════════════════════
+   COACH — visibilité boutons + création profil
+══════════════════════════════════════════ */
+document.addEventListener('DOMContentLoaded', () => {
+  const u = getUser();
+
+  // Onglet Coach dans la nav
+  if (u?.is_coach) document.getElementById('nav-coach').style.display = 'flex';
+
+  // Boutons profile
+  if (u?.is_coach) {
+    document.getElementById('row-coach-dashboard').style.display = 'flex';
+    document.getElementById('row-become-coach').style.display = 'none';
+  } else {
+    document.getElementById('row-become-coach').style.display = 'flex';
+    document.getElementById('row-coach-dashboard').style.display = 'none';
+  }
+
+  // Note : "Mon Coach" (côté client) viendra en Phase B (endpoints /api/client/coach/* manquants)
+});
+
+// ── Sheet open/close ──────────────────────
+function ccOpenSheet() {
+  document.getElementById('cc-create-sheet').classList.add('is-open');
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('cc-nom').focus(), 350);
+}
+function ccCloseSheet() {
+  document.getElementById('cc-create-sheet').classList.remove('is-open');
+  document.body.style.overflow = '';
+  document.getElementById('cc-create-form').reset();
+}
+
+document.getElementById('row-become-coach').addEventListener('click', ccOpenSheet);
+document.getElementById('cc-cancel').addEventListener('click', ccCloseSheet);
+document.getElementById('cc-create-overlay').addEventListener('click', ccCloseSheet);
+
+document.getElementById('cc-create-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const nom    = document.getElementById('cc-nom').value.trim();
+  const prenom = document.getElementById('cc-prenom').value.trim();
+  const bio    = document.getElementById('cc-bio').value.trim();
+  const specialites = [...document.querySelectorAll('.cc-spec:checked')].map(c => c.value);
+
+  if (!nom) { toast('Nom requis', 'error'); return; }
+
+  const btn = document.getElementById('cc-submit');
+  setLoading(btn, true);
+  try {
+    await API.coach.createProfile({
+      nom,
+      prenom: prenom || null,
+      bio:    bio    || null,
+      specialites,
+    });
+    // Met à jour localement le flag is_coach
+    const u = getUser();
+    if (u) { u.is_coach = true; setUser(u); }
+    toast('Profil coach créé ! Essai gratuit 7 jours 🎉', 'success');
+    ccCloseSheet();
+    setTimeout(() => navigate('/pages/coach-dashboard.html'), 600);
+  } catch (err) {
+    if (err.status === 409) {
+      toast('Tu as déjà un profil coach', 'info');
+      const u = getUser(); if (u) { u.is_coach = true; setUser(u); }
+      ccCloseSheet();
+      location.reload();
+    } else {
+      toast(err.message || 'Erreur création profil', 'error');
+    }
+  } finally {
+    setLoading(btn, false);
+  }
+});
 </script>
 </body>
 </html>

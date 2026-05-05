@@ -1,0 +1,962 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="theme-color" content="#F2F2F7">
+  <title>Détail client — AppKcal Coach</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/main.css">
+  <style>
+    /* ── Header ────────────────────────────── */
+    .cc-header {
+      padding: calc(env(safe-area-inset-top) + 14px) 14px 14px;
+      display: flex; align-items: center; gap: 12px;
+    }
+    .cc-back {
+      width: 36px; height: 36px;
+      display: flex; align-items: center; justify-content: center;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.65);
+      backdrop-filter: blur(8px);
+      border: 0.5px solid var(--border-default);
+      font-size: 18px;
+      flex-shrink: 0;
+    }
+    .cc-avatar {
+      width: 44px; height: 44px; border-radius: 50%;
+      background: var(--bg-tertiary);
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; color: var(--text-secondary);
+      overflow: hidden;
+      border: 0.5px solid var(--border-default);
+      flex-shrink: 0;
+    }
+    .cc-avatar img { width: 100%; height: 100%; object-fit: cover; }
+    .cc-id { flex: 1; min-width: 0; }
+    .cc-name { font-weight: 700; font-size: 16px; }
+    .cc-badges {
+      display: flex; align-items: center; gap: 6px;
+      margin-top: 3px; flex-wrap: wrap;
+    }
+    .cc-pill-status {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block;
+    }
+    .cc-pill-status--green  { background: #16a34a; }
+    .cc-pill-status--orange { background: #d97706; }
+    .cc-pill-status--red    { background: #dc2626; }
+
+    /* ── Tabs ──────────────────────────────── */
+    .cc-tabs {
+      display: flex;
+      border-bottom: 0.5px solid var(--border-default);
+      padding: 0 8px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .cc-tabs::-webkit-scrollbar { display: none; }
+    .cc-tab {
+      flex: 1; min-width: max-content;
+      background: none; border: none;
+      padding: 12px 14px;
+      font-size: 14px; font-weight: 500;
+      color: var(--text-tertiary);
+      border-bottom: 2px solid transparent;
+      transition: color 0.15s, border-color 0.15s;
+      -webkit-tap-highlight-color: transparent;
+      min-height: 44px;
+    }
+    .cc-tab.active {
+      color: var(--text-primary);
+      border-bottom-color: var(--text-primary);
+      font-weight: 600;
+    }
+
+    /* ── Tab panels ────────────────────────── */
+    .cc-panel {
+      padding: 16px;
+      display: none;
+    }
+    .cc-panel.active { display: block; }
+
+    /* ── Common cards ──────────────────────── */
+    .cc-card {
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border: 0.5px solid var(--glass-border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 12px;
+    }
+    .cc-card__title {
+      font-size: 13px; font-weight: 600;
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.05em;
+      margin-bottom: 10px;
+    }
+
+    /* ── Adherence pill ────────────────────── */
+    .adherence-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      padding: 3px 10px;
+      border-radius: var(--radius-pill);
+      font-size: 12px; font-weight: 600;
+      font-family: var(--font-mono);
+    }
+    .adherence-pill--good { background: rgba(34,197,94,0.12); color: #16a34a; }
+    .adherence-pill--mid  { background: rgba(245,158,11,0.12); color: #d97706; }
+    .adherence-pill--low  { background: rgba(239,68,68,0.12); color: #dc2626; }
+
+    /* ── Nutrition tab ─────────────────────── */
+    .log-row {
+      display: flex; align-items: center; gap: 10px;
+      padding: 8px 0;
+      border-bottom: 0.5px solid var(--border-default);
+    }
+    .log-row:last-child { border-bottom: none; }
+    .log-meal {
+      font-size: 11px; padding: 2px 6px;
+      border-radius: var(--radius-sm);
+      background: var(--bg-tertiary);
+      color: var(--text-secondary);
+      text-transform: uppercase; letter-spacing: 0.04em;
+      flex-shrink: 0;
+    }
+    .log-name { flex: 1; font-size: 14px; }
+    .log-kcal { font-family: var(--font-mono); font-size: 13px; color: var(--text-secondary); }
+
+    .week-bars {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 6px;
+      align-items: end;
+      height: 80px;
+      margin: 12px 0 8px;
+    }
+    .week-bar {
+      background: var(--bg-tertiary);
+      border-radius: var(--radius-sm);
+      position: relative;
+      min-height: 4px;
+      transition: height 0.3s;
+    }
+    .week-bar--good { background: #22C55E; }
+    .week-bar__label {
+      position: absolute;
+      bottom: -18px; left: 0; right: 0;
+      text-align: center;
+      font-size: 10px;
+      color: var(--text-tertiary);
+    }
+    .week-legend {
+      display: flex; gap: 16px;
+      font-size: 11px; color: var(--text-tertiary);
+      margin-top: 22px;
+    }
+    .week-legend-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+
+    .macros-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .macro-stat {
+      background: var(--bg-secondary);
+      border-radius: var(--radius-md);
+      padding: 8px;
+      text-align: center;
+    }
+    .macro-stat__val { font-family: var(--font-mono); font-weight: 600; }
+    .macro-stat__lbl { font-size: 10px; color: var(--text-tertiary); text-transform: uppercase; }
+
+    /* ── Plan / Programme inline form ──────── */
+    .form-grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    /* ── Goals tab ─────────────────────────── */
+    .goal-item {
+      display: flex; align-items: flex-start; gap: 10px;
+      padding: 10px 0;
+      border-bottom: 0.5px solid var(--border-default);
+    }
+    .goal-item:last-child { border-bottom: none; }
+    .goal-status {
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--bg-tertiary);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+      font-size: 13px;
+    }
+    .goal-status--done    { background: rgba(34,197,94,0.15); }
+    .goal-status--pending { background: rgba(245,158,11,0.15); }
+    .goal-status--missed  { background: rgba(239,68,68,0.15); }
+    .goal-text { flex: 1; font-size: 14px; }
+    .goal-remove {
+      background: none; border: none;
+      color: var(--text-tertiary);
+      font-size: 18px; padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    /* ── Messages tab ──────────────────────── */
+    .msg-list {
+      display: flex; flex-direction: column; gap: 8px;
+      padding-bottom: 100px;
+      max-height: 60dvh;
+      overflow-y: auto;
+    }
+    .msg {
+      max-width: 78%;
+      padding: 10px 14px;
+      border-radius: var(--radius-lg);
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+    }
+    .msg--coach {
+      background: var(--text-primary);
+      color: var(--text-inverse);
+      align-self: flex-end;
+      border-bottom-right-radius: 4px;
+    }
+    .msg--client {
+      background: var(--bg-tertiary);
+      color: var(--text-primary);
+      align-self: flex-start;
+      border-bottom-left-radius: 4px;
+    }
+    .msg__time {
+      font-size: 10px; opacity: 0.6;
+      margin-top: 4px;
+    }
+    .msg-attachment {
+      background: rgba(255,255,255,0.12);
+      padding: 8px;
+      border-radius: var(--radius-md);
+      margin-top: 6px;
+      font-size: 12px;
+    }
+    .msg--client .msg-attachment {
+      background: rgba(0,0,0,0.06);
+    }
+
+    .msg-input-row {
+      position: fixed;
+      bottom: calc(var(--nav-h) + env(safe-area-inset-bottom) + 8px);
+      left: 0; right: 0;
+      display: flex; gap: 8px;
+      padding: 8px 12px;
+      background: var(--glass-bg);
+      backdrop-filter: var(--glass-blur);
+      -webkit-backdrop-filter: var(--glass-blur);
+      border-top: 0.5px solid var(--border-default);
+      z-index: 50;
+    }
+    .msg-input {
+      flex: 1;
+      padding: 10px 14px;
+      border-radius: var(--radius-pill);
+      border: 0.5px solid var(--border-default);
+      background: var(--bg-secondary);
+      font-size: 14px; font-family: var(--font);
+      outline: none;
+    }
+    .msg-input:focus { border-color: var(--border-focus); background: #fff; }
+    .msg-send {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--text-primary);
+      color: var(--text-inverse);
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+
+    /* ── Bilan IA ──────────────────────────── */
+    .review-textarea {
+      width: 100%;
+      min-height: 180px;
+      padding: 12px;
+      border: 0.5px solid var(--border-default);
+      border-radius: var(--radius-md);
+      background: var(--bg-secondary);
+      font-family: var(--font);
+      font-size: 14px; line-height: 1.5;
+      resize: vertical;
+      outline: none;
+    }
+    .review-textarea:focus { border-color: var(--border-focus); background: #fff; }
+    .review-sent {
+      background: var(--olive-xl);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      font-size: 14px; line-height: 1.5;
+      white-space: pre-wrap;
+    }
+
+    /* ── Disabled feature note ─────────────── */
+    .feature-disabled {
+      background: rgba(245, 158, 11, 0.08);
+      border: 0.5px dashed rgba(245, 158, 11, 0.4);
+      border-radius: var(--radius-md);
+      padding: 10px 12px;
+      font-size: 12px;
+      color: #a16207;
+    }
+  </style>
+</head>
+<body>
+
+<header class="cc-header">
+  <button class="cc-back" onclick="navigate('/pages/coach-dashboard.html')" aria-label="Retour">←</button>
+  <div class="cc-avatar" id="cc-avatar">?</div>
+  <div class="cc-id">
+    <div class="cc-name" id="cc-name">…</div>
+    <div class="cc-badges">
+      <span class="cc-pill-status" id="cc-pill-status"></span>
+      <span class="pill" id="cc-goal" style="display:none"></span>
+      <span class="adherence-pill" id="cc-adherence">— %</span>
+    </div>
+  </div>
+</header>
+
+<div class="cc-tabs" role="tablist">
+  <button class="cc-tab active" data-tab="nutrition">Nutrition</button>
+  <button class="cc-tab" data-tab="sport">Sport</button>
+  <button class="cc-tab" data-tab="goals">Objectifs</button>
+  <button class="cc-tab" data-tab="messages">Messages</button>
+</div>
+
+<main class="page">
+  <!-- ══ NUTRITION ══════════════════════════ -->
+  <section class="cc-panel active" id="panel-nutrition">
+    <div class="cc-card">
+      <div class="cc-card__title">7 derniers jours</div>
+      <div class="week-bars" id="week-bars"></div>
+      <div class="week-legend">
+        <span><span class="week-legend-dot" style="background:#22C55E"></span>Objectif atteint (±10%)</span>
+        <span><span class="week-legend-dot" style="background:rgba(0,0,0,0.18)"></span>Hors objectif</span>
+      </div>
+    </div>
+
+    <div class="cc-card">
+      <div class="cc-card__title">Aujourd'hui</div>
+      <div id="today-totals" style="font-family:var(--font-mono);font-size:1.2rem;font-weight:600;margin-bottom:10px"></div>
+      <div class="progress-bar">
+        <div class="progress-bar__fill" id="today-progress" style="width:0%"></div>
+      </div>
+      <div class="macros-grid">
+        <div class="macro-stat">
+          <div class="macro-stat__val" id="today-prot">0g</div>
+          <div class="macro-stat__lbl">Prot.</div>
+        </div>
+        <div class="macro-stat">
+          <div class="macro-stat__val" id="today-carbs">0g</div>
+          <div class="macro-stat__lbl">Gluc.</div>
+        </div>
+        <div class="macro-stat">
+          <div class="macro-stat__val" id="today-fat">0g</div>
+          <div class="macro-stat__lbl">Lip.</div>
+        </div>
+      </div>
+      <div id="today-logs" style="margin-top:10px"></div>
+    </div>
+
+    <div class="cc-card">
+      <div class="cc-card__title">Plan nutrition actif</div>
+      <div id="active-plan-display"></div>
+      <button class="btn btn--outline btn--full mt-8" id="btn-edit-plan">Modifier le plan</button>
+      <button class="btn btn--primary btn--full mt-8" id="btn-create-plan" style="display:none">Créer un plan</button>
+
+      <form id="plan-form" style="display:none;margin-top:12px">
+        <div class="form-group mb-16">
+          <label class="form-label">Nom du plan</label>
+          <input class="form-input" id="plan-nom" placeholder="ex : Sèche printemps" required>
+        </div>
+        <div class="form-group mb-16">
+          <label class="form-label">Kcal cibles / jour</label>
+          <input class="form-input" type="number" id="plan-kcal" placeholder="2000" inputmode="numeric" required>
+        </div>
+        <div class="form-grid-2 mb-16">
+          <div class="form-group">
+            <label class="form-label">Prot. (g)</label>
+            <input class="form-input" type="number" id="plan-prot" inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Gluc. (g)</label>
+            <input class="form-input" type="number" id="plan-carbs" inputmode="numeric">
+          </div>
+        </div>
+        <div class="form-grid-2 mb-16">
+          <div class="form-group">
+            <label class="form-label">Lip. (g)</label>
+            <input class="form-input" type="number" id="plan-fat" inputmode="numeric">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Kcal sport / repos</label>
+            <input class="form-input" type="text" id="plan-sport-rest" placeholder="2200 / 1800">
+          </div>
+        </div>
+        <div class="form-group mb-16">
+          <label class="form-label">Notes</label>
+          <textarea class="form-input" id="plan-notes" rows="3"></textarea>
+        </div>
+        <div style="display:flex;gap:10px">
+          <button type="button" class="btn btn--ghost" style="flex:1" id="plan-cancel">Annuler</button>
+          <button type="submit" class="btn btn--primary" style="flex:2" id="plan-submit">Sauvegarder</button>
+        </div>
+      </form>
+    </div>
+  </section>
+
+  <!-- ══ SPORT ══════════════════════════════ -->
+  <section class="cc-panel" id="panel-sport">
+    <div class="cc-card">
+      <div class="cc-card__title">Adhérence sport (7 jours)</div>
+      <div style="display:flex;align-items:center;gap:12px">
+        <span class="adherence-pill" id="sport-adherence">— %</span>
+        <span class="text-sm text-muted" id="sport-counts">0 séance effectuée</span>
+      </div>
+    </div>
+
+    <div class="cc-card">
+      <div class="cc-card__title">Historique 7 derniers jours</div>
+      <div id="sport-history">
+        <p class="text-sm text-muted">Aucune séance enregistrée.</p>
+      </div>
+    </div>
+
+    <div class="cc-card">
+      <div class="cc-card__title">Programme actif</div>
+      <div id="active-programme-display">
+        <p class="text-sm text-muted">Aucun programme assigné.</p>
+      </div>
+      <div class="feature-disabled mt-16">
+        L'assignation de programmes nécessite l'endpoint coach <code>GET /api/coach/clients/:id/programmes</code> qui sera livré en Phase B.
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ OBJECTIFS ══════════════════════════ -->
+  <section class="cc-panel" id="panel-goals">
+    <div class="cc-card">
+      <div class="cc-card__title">Objectifs de la semaine</div>
+      <div id="goals-list">
+        <p class="text-sm text-muted">Aucun objectif pour cette semaine.</p>
+      </div>
+    </div>
+
+    <div class="cc-card">
+      <div class="cc-card__title">Définir des objectifs</div>
+      <div id="goals-editor">
+        <!-- input rows added dynamically -->
+      </div>
+      <button class="btn btn--ghost btn--full mt-8" id="btn-add-goal">+ Ajouter un objectif</button>
+      <button class="btn btn--primary btn--full mt-8" id="btn-save-goals">Sauvegarder les objectifs</button>
+    </div>
+
+    <div class="cc-card">
+      <div class="cc-card__title">Bilan IA hebdomadaire</div>
+      <div id="review-container">
+        <button class="btn btn--primary btn--full" id="btn-generate-review">Générer le bilan de la semaine</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══ MESSAGES ══════════════════════════════ -->
+  <section class="cc-panel" id="panel-messages">
+    <div class="msg-list" id="msg-list">
+      <p class="text-sm text-muted text-center" style="padding:24px">Aucun message pour l'instant.</p>
+    </div>
+  </section>
+</main>
+
+<!-- Zone d'envoi (visible uniquement onglet messages) -->
+<div class="msg-input-row" id="msg-input-row" style="display:none">
+  <input class="msg-input" id="msg-input" type="text" placeholder="Écris un message…">
+  <button class="msg-send" id="msg-send" aria-label="Envoyer">
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+  </button>
+</div>
+
+<!-- Bottom Nav -->
+<nav class="bottom-nav">
+  <a class="nav-item" href="/pages/dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+    Accueil
+  </a>
+  <a class="nav-item" href="/pages/feed.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+    Feed
+  </a>
+  <a class="nav-item nav-item--fab" href="/pages/photo.html">
+    <div class="nav-fab-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke-width="2.5"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" stroke="#fff"/><circle cx="12" cy="13" r="4" stroke="#fff"/></svg>
+    </div>
+    <span>Photo IA</span>
+  </a>
+  <a class="nav-item" href="/pages/sport.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6.5 6.5h11M6.5 17.5h11M3 12h18M7 3l-4 9 4 9M17 3l4 9-4 9"/></svg>
+    Sport
+  </a>
+  <a class="nav-item active" id="nav-coach" href="/pages/coach-dashboard.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><polyline points="17 11 19 13 23 9"/></svg>
+    Coach
+  </a>
+  <a class="nav-item" href="/pages/calendar.html">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
+    Calendrier
+  </a>
+</nav>
+
+<div id="toast-container"></div>
+
+<script src="/js/api.js"></script>
+<script>
+const GOAL_LABELS = { bulk: 'Masse', cut: 'Sèche', maintain: 'Maintien', rebalance: 'Rééquilibrage' };
+const MEAL_LABELS = { breakfast: 'Matin', lunch: 'Midi', dinner: 'Soir', snack: 'Snack' };
+const DOW = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+let CLIENT_ID = null;
+let DETAIL = null;
+let CURRENT_REVIEW = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  if (!requireAuth()) return;
+
+  CLIENT_ID = new URLSearchParams(location.search).get('id');
+  if (!CLIENT_ID) {
+    toast('Client introuvable', 'error');
+    setTimeout(() => navigate('/pages/coach-dashboard.html'), 600);
+    return;
+  }
+
+  // Tab switcher
+  document.querySelectorAll('.cc-tab').forEach(btn => {
+    btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+  });
+
+  // Plan form
+  document.getElementById('btn-edit-plan').addEventListener('click', () => togglePlanForm(true, true));
+  document.getElementById('btn-create-plan').addEventListener('click', () => togglePlanForm(true, false));
+  document.getElementById('plan-cancel').addEventListener('click', () => togglePlanForm(false));
+  document.getElementById('plan-form').addEventListener('submit', submitPlan);
+
+  // Goals
+  document.getElementById('btn-add-goal').addEventListener('click', () => addGoalRow(''));
+  document.getElementById('btn-save-goals').addEventListener('click', saveGoals);
+
+  // Review
+  document.getElementById('btn-generate-review').addEventListener('click', generateReview);
+
+  // Messages
+  document.getElementById('msg-send').addEventListener('click', sendMsg);
+  document.getElementById('msg-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { e.preventDefault(); sendMsg(); }
+  });
+
+  await loadDetail();
+});
+
+// ── Tab switching ──────────────────────────
+function switchTab(tab) {
+  document.querySelectorAll('.cc-tab').forEach(b => b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('.cc-panel').forEach(p => p.classList.toggle('active', p.id === 'panel-' + tab));
+  document.getElementById('msg-input-row').style.display = (tab === 'messages') ? 'flex' : 'none';
+  if (tab === 'messages') loadMessages();
+}
+
+// ── Load all data ──────────────────────────
+async function loadDetail() {
+  try {
+    DETAIL = await API.coach.getClientDetail(CLIENT_ID);
+    renderHeader();
+    renderNutrition();
+    renderSport();
+    renderGoals();
+  } catch (err) {
+    console.error('[coach-client] loadDetail', err);
+    toast(err.message || 'Erreur de chargement', 'error');
+  }
+}
+
+// ── Header ─────────────────────────────────
+function renderHeader() {
+  const profile = DETAIL.profile || {};
+  const name = profile.username || 'Client';
+  const avatar = document.getElementById('cc-avatar');
+  if (profile.avatar_url) {
+    avatar.innerHTML = `<img src="${escapeHtml(profile.avatar_url)}" alt="">`;
+  } else {
+    avatar.textContent = (name[0] || '?').toUpperCase();
+  }
+  document.getElementById('cc-name').textContent = name;
+
+  const status = DETAIL.coach_client?.status === 'active' ? 'green'
+                : DETAIL.coach_client?.status === 'paused' ? 'orange' : 'red';
+  const statusEl = document.getElementById('cc-pill-status');
+  statusEl.className = 'cc-pill-status cc-pill-status--' + status;
+
+  if (profile.goal) {
+    const goalEl = document.getElementById('cc-goal');
+    goalEl.textContent = GOAL_LABELS[profile.goal] || profile.goal;
+    goalEl.style.display = 'inline-block';
+  }
+
+  const pct = DETAIL.adherence?.nutrition_pct ?? 0;
+  const adh = document.getElementById('cc-adherence');
+  adh.textContent = pct + ' %';
+  adh.classList.remove('adherence-pill--good', 'adherence-pill--mid', 'adherence-pill--low');
+  adh.classList.add(pct >= 70 ? 'adherence-pill--good' : pct >= 40 ? 'adherence-pill--mid' : 'adherence-pill--low');
+}
+
+// ── Nutrition tab ──────────────────────────
+function renderNutrition() {
+  const target = DETAIL.target_kcal_used || 2000;
+  const lower = target * 0.9, upper = target * 1.1;
+
+  // 7-day bars
+  const today = new Date();
+  const days = [];
+  for (let i = 6; i >= 0; i--) {
+    const d = new Date(today); d.setDate(d.getDate() - i);
+    const ymd = d.toISOString().slice(0, 10);
+    const found = (DETAIL.nutrition?.by_day || []).find(x => x.date === ymd);
+    days.push({ date: ymd, kcal: found ? Math.round(found.kcal) : 0, dow: DOW[(d.getDay() + 6) % 7] });
+  }
+  const maxKcal = Math.max(target, ...days.map(d => d.kcal)) || 1;
+  const bars = document.getElementById('week-bars');
+  bars.innerHTML = days.map(d => {
+    const inGoal = d.kcal >= lower && d.kcal <= upper;
+    const h = Math.max(4, (d.kcal / maxKcal) * 80);
+    return `<div class="week-bar ${inGoal ? 'week-bar--good' : ''}" style="height:${h}px" title="${d.date} : ${d.kcal} kcal"><div class="week-bar__label">${d.dow}</div></div>`;
+  }).join('');
+
+  // Today totals
+  const todayStr = new Date().toISOString().slice(0, 10);
+  const todayLogs = (DETAIL.nutrition?.logs || []).filter(l => l.date === todayStr);
+  const totals = todayLogs.reduce((a, l) => ({
+    kcal: a.kcal + Number(l.kcal || 0),
+    p:    a.p    + Number(l.protein_g || 0),
+    c:    a.c    + Number(l.carbs_g   || 0),
+    f:    a.f    + Number(l.fat_g     || 0),
+  }), { kcal: 0, p: 0, c: 0, f: 0 });
+
+  document.getElementById('today-totals').textContent = Math.round(totals.kcal) + ' / ' + target + ' kcal';
+  document.getElementById('today-progress').style.width = Math.min(100, Math.round((totals.kcal / target) * 100)) + '%';
+  document.getElementById('today-prot').textContent  = totals.p.toFixed(1) + 'g';
+  document.getElementById('today-carbs').textContent = totals.c.toFixed(1) + 'g';
+  document.getElementById('today-fat').textContent   = totals.f.toFixed(1) + 'g';
+
+  const logsEl = document.getElementById('today-logs');
+  if (todayLogs.length === 0) {
+    logsEl.innerHTML = '<p class="text-sm text-muted">Aucun repas aujourd\'hui.</p>';
+  } else {
+    logsEl.innerHTML = todayLogs.map(l => `
+      <div class="log-row">
+        <span class="log-meal">${escapeHtml(MEAL_LABELS[l.meal_type] || l.meal_type || '—')}</span>
+        <span class="log-name">${escapeHtml(l.name || 'Aliment')}</span>
+        <span class="log-kcal">${Math.round(l.kcal || 0)} kcal</span>
+      </div>`).join('');
+  }
+
+  // Active plan
+  const plan = DETAIL.active_plan;
+  const display = document.getElementById('active-plan-display');
+  if (plan) {
+    display.innerHTML = `
+      <div style="font-weight:600;margin-bottom:4px">${escapeHtml(plan.nom)}</div>
+      <div class="text-sm text-muted">${plan.daily_kcal_target} kcal · P ${plan.proteines_target_g}g · G ${plan.glucides_target_g}g · L ${plan.lipides_target_g}g</div>
+      ${plan.notes ? `<p class="text-sm mt-8">${escapeHtml(plan.notes)}</p>` : ''}
+    `;
+    document.getElementById('btn-edit-plan').style.display = '';
+    document.getElementById('btn-create-plan').style.display = 'none';
+  } else {
+    display.innerHTML = '<p class="text-sm text-muted">Aucun plan actif. Crée le premier plan pour ce client.</p>';
+    document.getElementById('btn-edit-plan').style.display = 'none';
+    document.getElementById('btn-create-plan').style.display = '';
+  }
+}
+
+function togglePlanForm(show, prefill) {
+  const form = document.getElementById('plan-form');
+  form.style.display = show ? 'block' : 'none';
+  if (show && prefill && DETAIL.active_plan) {
+    const p = DETAIL.active_plan;
+    document.getElementById('plan-nom').value   = p.nom || '';
+    document.getElementById('plan-kcal').value  = p.daily_kcal_target ?? '';
+    document.getElementById('plan-prot').value  = p.proteines_target_g ?? '';
+    document.getElementById('plan-carbs').value = p.glucides_target_g ?? '';
+    document.getElementById('plan-fat').value   = p.lipides_target_g ?? '';
+    document.getElementById('plan-sport-rest').value =
+      [p.kcal_sport_day, p.kcal_rest_day].filter(v => v != null).join(' / ');
+    document.getElementById('plan-notes').value = p.notes || '';
+  }
+}
+
+async function submitPlan(e) {
+  e.preventDefault();
+  const sportRest = document.getElementById('plan-sport-rest').value.trim();
+  const [sportKcal, restKcal] = sportRest.split('/').map(s => Number(s.trim())).filter(n => !isNaN(n));
+
+  const payload = {
+    client_id: CLIENT_ID,
+    nom: document.getElementById('plan-nom').value.trim(),
+    daily_kcal_target: Number(document.getElementById('plan-kcal').value),
+    proteines_target_g: Number(document.getElementById('plan-prot').value)  || 0,
+    glucides_target_g:  Number(document.getElementById('plan-carbs').value) || 0,
+    lipides_target_g:   Number(document.getElementById('plan-fat').value)   || 0,
+    kcal_sport_day: sportKcal ?? null,
+    kcal_rest_day:  restKcal  ?? null,
+    notes: document.getElementById('plan-notes').value.trim() || null,
+  };
+
+  if (!payload.nom || !payload.daily_kcal_target) {
+    toast('Nom et kcal cibles requis', 'error');
+    return;
+  }
+
+  const btn = document.getElementById('plan-submit');
+  setLoading(btn, true);
+  try {
+    await API.coach.createPlan(payload);
+    toast('Plan sauvegardé !', 'success');
+    togglePlanForm(false);
+    await loadDetail();
+  } catch (err) {
+    toast(err.message || 'Erreur', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// ── Sport tab ──────────────────────────────
+function renderSport() {
+  const pct = DETAIL.adherence?.sport_pct;
+  const pill = document.getElementById('sport-adherence');
+  if (pct == null) {
+    pill.textContent = '—';
+    pill.classList.add('adherence-pill--low');
+  } else {
+    pill.textContent = pct + ' %';
+    pill.classList.remove('adherence-pill--good', 'adherence-pill--mid', 'adherence-pill--low');
+    pill.classList.add(pct >= 70 ? 'adherence-pill--good' : pct >= 40 ? 'adherence-pill--mid' : 'adherence-pill--low');
+  }
+
+  const history = DETAIL.sport?.history || [];
+  document.getElementById('sport-counts').textContent =
+    history.length + ' séance' + (history.length > 1 ? 's' : '') + ' effectuée' + (history.length > 1 ? 's' : '');
+
+  const histEl = document.getElementById('sport-history');
+  if (history.length === 0) {
+    histEl.innerHTML = '<p class="text-sm text-muted">Aucune séance enregistrée sur les 7 derniers jours.</p>';
+  } else {
+    const sorted = [...history].sort((a, b) => b.date.localeCompare(a.date));
+    histEl.innerHTML = sorted.map(s => `
+      <div class="log-row">
+        <span class="log-name">
+          <strong>${escapeHtml(s.seance_nom || 'Séance')}</strong>
+          <div class="text-xs text-muted">${formatDate(s.date)}${s.duree_minutes ? ' · ' + s.duree_minutes + ' min' : ''}${s.volume_total ? ' · ' + Math.round(s.volume_total) + ' kg' : ''}</div>
+        </span>
+      </div>`).join('');
+  }
+
+  const assign = DETAIL.active_programme_assignment;
+  const display = document.getElementById('active-programme-display');
+  if (assign) {
+    display.innerHTML = `<div class="text-sm">Programme assigné le ${formatDate(assign.assigned_at)}.${assign.notes ? '<p class="mt-8 text-muted">' + escapeHtml(assign.notes) + '</p>' : ''}</div>`;
+  } else {
+    display.innerHTML = '<p class="text-sm text-muted">Aucun programme assigné.</p>';
+  }
+}
+
+// ── Goals tab ──────────────────────────────
+function renderGoals() {
+  const goals = DETAIL.weekly_goals;
+  const list = document.getElementById('goals-list');
+  if (!goals || !Array.isArray(goals.goals) || goals.goals.length === 0) {
+    list.innerHTML = '<p class="text-sm text-muted">Aucun objectif pour cette semaine.</p>';
+  } else {
+    const status = Array.isArray(goals.status) ? goals.status : [];
+    list.innerHTML = goals.goals.map((g, i) => {
+      const s = status[i] || 'pending';
+      const icon = s === 'done' ? '✅' : s === 'missed' ? '❌' : '⏳';
+      return `
+        <div class="goal-item">
+          <div class="goal-status goal-status--${s}">${icon}</div>
+          <div class="goal-text">${escapeHtml(typeof g === 'string' ? g : (g.text || JSON.stringify(g)))}</div>
+        </div>`;
+    }).join('');
+  }
+
+  // Editor — prefill with existing goals
+  const editor = document.getElementById('goals-editor');
+  editor.innerHTML = '';
+  if (goals?.goals?.length) {
+    goals.goals.forEach(g => addGoalRow(typeof g === 'string' ? g : (g.text || '')));
+  } else {
+    addGoalRow('');
+  }
+
+  // Review state
+  renderReviewState();
+}
+
+function addGoalRow(value) {
+  const editor = document.getElementById('goals-editor');
+  const row = document.createElement('div');
+  row.style.cssText = 'display:flex;gap:6px;margin-bottom:6px';
+  row.innerHTML = `
+    <input class="form-input" placeholder="ex : Atteindre 150g de protéines 5j/7" value="${escapeHtml(value || '')}">
+    <button type="button" class="goal-remove" aria-label="Retirer">×</button>
+  `;
+  row.querySelector('.goal-remove').addEventListener('click', () => row.remove());
+  editor.appendChild(row);
+}
+
+async function saveGoals() {
+  const inputs = document.querySelectorAll('#goals-editor input');
+  const goals = [...inputs].map(i => ({ text: i.value.trim() })).filter(g => g.text);
+  if (goals.length === 0) { toast('Ajoute au moins un objectif', 'error'); return; }
+
+  const btn = document.getElementById('btn-save-goals');
+  setLoading(btn, true);
+  try {
+    await API.coach.createWeeklyGoals({ client_id: CLIENT_ID, goals });
+    toast('Objectifs sauvegardés !', 'success');
+    await loadDetail();
+  } catch (err) {
+    toast(err.message || 'Erreur', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// ── Review (bilan IA) ──────────────────────
+function renderReviewState() {
+  // Pas d'endpoint pour récupérer le review existant — il vient via generateReview
+  CURRENT_REVIEW = null;
+  const c = document.getElementById('review-container');
+  c.innerHTML = `<button class="btn btn--primary btn--full" id="btn-generate-review">Générer le bilan de la semaine</button>`;
+  c.querySelector('#btn-generate-review').addEventListener('click', generateReview);
+}
+
+async function generateReview() {
+  const btn = document.getElementById('btn-generate-review');
+  if (btn) setLoading(btn, true);
+  try {
+    CURRENT_REVIEW = await API.coach.generateReview(CLIENT_ID);
+    showReviewEditor(CURRENT_REVIEW);
+  } catch (err) {
+    if (err.status === 409) {
+      toast('Un bilan a déjà été envoyé cette semaine', 'info');
+    } else {
+      toast(err.message || 'Erreur génération', 'error');
+    }
+  } finally {
+    if (btn) setLoading(btn, false);
+  }
+}
+
+function showReviewEditor(review) {
+  const c = document.getElementById('review-container');
+  if (review.is_sent) {
+    c.innerHTML = `
+      <div class="text-sm text-muted mb-16">Bilan déjà envoyé pour cette semaine :</div>
+      <div class="review-sent">${escapeHtml(review.coach_content || review.ia_draft || '')}</div>
+    `;
+    return;
+  }
+  c.innerHTML = `
+    <div class="text-sm text-muted mb-16">Brouillon généré par IA — relis et édite avant d'envoyer :</div>
+    <textarea class="review-textarea" id="review-text">${escapeHtml(review.ia_draft || '')}</textarea>
+    <div style="display:flex;gap:8px;margin-top:10px">
+      <button type="button" class="btn btn--ghost" style="flex:1" id="btn-regen">Régénérer</button>
+      <button type="button" class="btn btn--primary" style="flex:2" id="btn-send-review">Envoyer au client</button>
+    </div>
+  `;
+  c.querySelector('#btn-regen').addEventListener('click', generateReview);
+  c.querySelector('#btn-send-review').addEventListener('click', sendReview);
+}
+
+async function sendReview() {
+  if (!CURRENT_REVIEW) return;
+  const text = document.getElementById('review-text').value.trim();
+  if (!text) { toast('Le bilan est vide', 'error'); return; }
+  const btn = document.getElementById('btn-send-review');
+  setLoading(btn, true);
+  try {
+    const sent = await API.coach.sendReview(CURRENT_REVIEW.id, { coach_content: text });
+    toast('Bilan envoyé !', 'success');
+    showReviewEditor(sent);
+  } catch (err) {
+    toast(err.message || 'Erreur envoi', 'error');
+  } finally {
+    setLoading(btn, false);
+  }
+}
+
+// ── Messages ───────────────────────────────
+async function loadMessages() {
+  const list = document.getElementById('msg-list');
+  list.innerHTML = '<p class="text-sm text-muted text-center" style="padding:24px">Chargement…</p>';
+  try {
+    const messages = await API.coach.getMessages(CLIENT_ID);
+    if (!messages || messages.length === 0) {
+      list.innerHTML = '<p class="text-sm text-muted text-center" style="padding:24px">Aucun message pour l\'instant.</p>';
+      return;
+    }
+    const myId = getUser()?.id;
+    list.innerHTML = messages.map(m => {
+      const fromCoach = m.sender_id === myId;
+      const att = m.attachment_type ? `<div class="msg-attachment">📎 ${escapeHtml(m.attachment_type)}${m.attachment_id ? ' · ' + escapeHtml(m.attachment_id.slice(0, 8)) : ''}</div>` : '';
+      return `
+        <div class="msg ${fromCoach ? 'msg--coach' : 'msg--client'}">
+          ${m.content ? escapeHtml(m.content) : ''}
+          ${att}
+          <div class="msg__time">${formatTime(m.created_at)}</div>
+        </div>`;
+    }).join('');
+    // Scroll to bottom
+    list.scrollTop = list.scrollHeight;
+  } catch (err) {
+    list.innerHTML = `<p class="text-sm text-danger text-center">Erreur : ${escapeHtml(err.message || '')}</p>`;
+  }
+}
+
+async function sendMsg() {
+  const input = document.getElementById('msg-input');
+  const content = input.value.trim();
+  if (!content) return;
+  const btn = document.getElementById('msg-send');
+  btn.disabled = true;
+  try {
+    await API.coach.sendMessage(CLIENT_ID, { content });
+    input.value = '';
+    await loadMessages();
+  } catch (err) {
+    toast(err.message || 'Erreur envoi', 'error');
+  } finally {
+    btn.disabled = false;
+  }
+}
+
+// ── Helpers ────────────────────────────────
+function escapeHtml(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
+function formatTime(iso) {
+  const d = new Date(iso);
+  return d.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+}
+</script>
+</body>
+</html>
