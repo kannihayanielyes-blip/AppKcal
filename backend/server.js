@@ -12,6 +12,7 @@ const photoRoutes = require('./routes/photo');
 const adminRoutes = require('./routes/admin');
 const inviteRoutes = require('./routes/invite');
 const sportRoutes = require('./routes/sport');
+const coachRoutes = require('./routes/coach');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -55,6 +56,7 @@ app.use('/api/photo', photoRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/invite', inviteRoutes);
 app.use('/api/sport', sportRoutes);
+app.use('/api/coach', coachRoutes);
 
 // ── Health check ──────────────────────────────────────────────
 app.get('/api/health', (req, res) => {
